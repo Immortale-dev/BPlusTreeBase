@@ -123,7 +123,7 @@ void BPlusTreeBaseInternalNode<Key, T>::shift_right(Node* parent)
     // Get key between nodes
     Key shift_key = *divider;
     // Add divide key to this node
-    this->add_keys(this->size(), shift_key);
+    this->add_keys(this->size()-1, shift_key);
     // Add new child from next node
     this->add_nodes(this->size(), next->first_child_node());
     // Update key between nodes
@@ -149,9 +149,9 @@ void BPlusTreeBaseInternalNode<Key, T>::shift_left(Node* parent)
     // Add new child from prev node
     this->add_nodes(0, prev->last_child_node());
     // Update key between nodes
-    *divider = *(prev->keys_iterator()+(prev->size()-1));
+    *divider = *(prev->keys_iterator()+(prev->size()-2));
     // Remove shifted items from prev node
-    prev->remove_keys(prev->size()-1);
+    prev->remove_keys(prev->size()-2);
     prev->remove_nodes(prev->size()-1);
 }
 
@@ -163,17 +163,18 @@ void BPlusTreeBaseInternalNode<Key, T>::join_left(Node* parent)
     // Get Node to join
     Node* prev = parent->get_node(index);
     // Get key iterator between nodes to join
-    keys_type_iterator divider = parent->keys_iterator()+(index-1);
+    keys_type_iterator divider = parent->keys_iterator()+(index);
     // Get key between nodes
     Key join_key = *divider;
     // Add divide key to this node
-    this->add_keys(size(), join_key);
-    // Join all items from left node
-    this->add_nodes(size(), prev->nodes_iterator(), prev->nodes_iterator()+prev->size());
-    this->add_keys(size(), prev->keys_iterator(), prev->keys_iterator()+(prev->size()-1));
+    this->add_keys(0, join_key);
+    // Move all items from left node
+    this->add_keys(0, prev->keys_iterator(), prev->keys_iterator()+(prev->size()-1));
+    this->add_nodes(0, prev->nodes_iterator(), prev->nodes_iterator()+prev->size());
+    prev->remove_nodes(prev->nodes_iterator(), prev->nodes_iterator()+prev->size());
     // Delete joined items form parent
-    parent->remove_keys(index-1);
-    parent->remove_nodes(index-1);
+    parent->remove_keys(index);
+    parent->remove_nodes(index);
 }
 
 template<class Key, class T>
@@ -184,16 +185,17 @@ void BPlusTreeBaseInternalNode<Key, T>::join_right(Node* parent)
     // Get Node to join
     Node* next = parent->get_node(index);
     // Get key iterator between nodes to join
-    keys_type_iterator divider = parent->keys_iterator()+(index);
+    keys_type_iterator divider = parent->keys_iterator()+(index-1);
     // Get key between nodes
     Key join_key = *divider;
     // Add divide key to this node
-    this->add_keys(0, join_key);
+    this->add_keys(size()-1, join_key);
     // Join all items from left node
-    this->add_nodes(0, next->nodes_iterator(), next->nodes_iterator()+next->size());
-    this->add_keys(0, next->keys_iterator(), next->keys_iterator()+(next->size()-1));
+    this->add_keys(size(), next->keys_iterator(), next->keys_iterator()+(next->size()-1));
+    this->add_nodes(size(), next->nodes_iterator(), next->nodes_iterator()+next->size());
+    next->remove_nodes(next->nodes_iterator(), next->nodes_iterator()+next->size());
     // Delete joined items form parent
-    parent->remove_keys(index);
+    parent->remove_keys(index-1);
     parent->remove_nodes(index);
 }
 
@@ -202,7 +204,7 @@ Key BPlusTreeBaseInternalNode<Key, T>::split(Node* node)
 {
     // Get iterators to move to new node
     keys_type_iterator kstart = keys_iterator()+size()/2;
-    keys_type_iterator kend = keys_iterator()+size();
+    keys_type_iterator kend = keys_iterator()+(size()-1);
     nodes_type_iterator nstart = nodes_iterator()+size()/2;
     nodes_type_iterator nend = nodes_iterator()+size();
 
@@ -233,7 +235,7 @@ int BPlusTreeBaseInternalNode<Key, T>::get_index(Key key)
     int res = size()-1;
     while(mn<=mx){
         md = (mn+mx)/2;
-        if(child_keys[md] < key){
+        if(child_keys[md] <= key){
             mn = md+1;
         }
         else{
@@ -252,6 +254,7 @@ int BPlusTreeBaseInternalNode<Key, T>::get_index(Node* node)
         if(child_nodes[i] == node)
             return i;
     }
+    return 0;
 }
 
 template<class Key, class T>

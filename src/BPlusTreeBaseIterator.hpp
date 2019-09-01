@@ -21,6 +21,7 @@ class BPlusTreeBaseIterator
         BPlusTreeBaseIterator(Node* node, Key key);
         virtual ~BPlusTreeBaseIterator();
         Key get_key();
+        T get_value();
     protected:
         Node* node;
         Key key;
@@ -40,6 +41,12 @@ template <class Key, class T>
 Key BPlusTreeBaseIterator<Key, T>::get_key()
 {
     return this->key;
+}
+
+template <class Key, class T>
+T BPlusTreeBaseIterator<Key, T>::get_value()
+{
+	return (node->get(node->get_index(key)))->second;
 }
 
 template <class Key, class T>

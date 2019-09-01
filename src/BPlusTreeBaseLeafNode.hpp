@@ -19,7 +19,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         void release_node(child_item_type* node);
         void insert(child_item_type* item);
         void insert(int index, childs_type_iterator s, childs_type_iterator e);
-        void erase(int index);
+        child_item_type* erase(int index);
         void erase(childs_type_iterator s, childs_type_iterator e);
         inline bool is_leaf();
         bool exists(Key key);
@@ -69,11 +69,14 @@ inline bool BPlusTreeBaseLeafNode<Key, T>::is_leaf()
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::erase(int ind)
+typename BPlusTreeBaseLeafNode<Key, T>::child_item_type* BPlusTreeBaseLeafNode<Key, T>::erase(int ind)
 {
-    if(ind < 0)
-        return;
+    if(ind < 0){
+        return nullptr;
+	}
+	child_item_type* deleted = childs[ind];
     childs.erase(childs.begin()+ind);
+    return deleted;
 }
 
 template<class Key, class T>
@@ -86,6 +89,11 @@ template<class Key, class T>
 void BPlusTreeBaseLeafNode<Key, T>::insert(int index, childs_type_iterator s, childs_type_iterator e)
 {
     childs.insert(childs.begin()+index, s, e);
+    /*std::cout << "TEST_ISERT" << std::endl;
+    for(auto &it : childs){
+		std::cout << it->first << " ";
+	}
+	std::cout << std::endl;*/
 }
 
 template<class Key, class T>
@@ -196,8 +204,9 @@ void BPlusTreeBaseLeafNode<Key, T>::join_left(Node* parent)
     int index = parent->get_index(this)-1;
     // Get join node
     Node* prev = parent->get_node(index);
-    // Copy all items from join node
+    // Move all items from join node
     insert(0, prev->childs_iterator(), prev->childs_iterator()+prev->size());
+    prev->erase(prev->childs_iterator(), prev->childs_iterator()+prev->size());
     // Remove from parent
     parent->remove_keys(index);
     parent->remove_nodes(index);
@@ -210,8 +219,9 @@ void BPlusTreeBaseLeafNode<Key, T>::join_right(Node* parent)
     int index = parent->get_index(this)+1;
     // Get join node
     Node* next = parent->get_node(index);
-    // Copy all items from join node
+    // Move all items from join node
     insert(size(), next->childs_iterator(), next->childs_iterator()+next->size());
+    next->erase(next->childs_iterator(), next->childs_iterator()+next->size());
     // Remove from parent
     parent->remove_keys(index-1);
     parent->remove_nodes(index);
