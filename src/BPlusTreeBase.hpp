@@ -9,13 +9,16 @@
 template <class Key, class T>
 class BPlusTreeBase
 {
-    typedef BPlusTreeBaseNode<Key, T> Node;
-    typedef BPlusTreeBaseIterator<Key, T> iterator;
-    typedef BPlusTreeBaseInternalNode<Key, T> InternalNode;
-    typedef BPlusTreeBaseLeafNode<Key, T> LeafNode;
-    typedef std::pair<Key, T> EntryItem;
-
+	
     public:
+		typedef BPlusTreeBaseNode<Key, T> Node;
+		typedef BPlusTreeBaseIterator<Key, T> iterator;
+		typedef BPlusTreeBaseInternalNode<Key, T> InternalNode;
+		typedef BPlusTreeBaseLeafNode<Key, T> LeafNode;
+		typedef std::pair<Key, T> EntryItem;
+		
+		friend class BPlusTreeBaseIterator<Key, T>;
+		
         BPlusTreeBase(int factor);
         virtual ~BPlusTreeBase();
         iterator find(Key key);
@@ -25,6 +28,7 @@ class BPlusTreeBase
         iterator begin();
         iterator end();
         long size();
+        T operator[](Key key);
     
     // DEBUG METHODS
 	#ifdef DEBUG
@@ -98,6 +102,7 @@ BPlusTreeBase<Key,T>::BPlusTreeBase(int f)
     this->factor = f;
     Node* node = create_leaf_node();
     set_root(node);
+    last = nullptr;
     v_count = 0;
 }
 
@@ -122,6 +127,12 @@ long BPlusTreeBase<Key,T>::size()
 }
 
 template<class Key, class T>
+T BPlusTreeBase<Key, T>::operator[](Key key)
+{
+	return find(key)->second;
+}
+
+template<class Key, class T>
 typename BPlusTreeBase<Key, T>::iterator BPlusTreeBase<Key,T>::find(Key key)
 {
     Node* node = get_root();
@@ -129,9 +140,11 @@ typename BPlusTreeBase<Key, T>::iterator BPlusTreeBase<Key,T>::find(Key key)
         if(!node) return end();
         processSearchNodeStart(node);
         if(node->is_leaf()){
+			iterator it = end();
             if(node->exists(key))
-                return iterator(node, key);
-            return end();
+                it = iterator(node, key, this);
+			processSearchNodeEnd(node);
+            return it;
         }
         Node* tnode = node->find(key);
         processSearchNodeEnd(node);
@@ -148,7 +161,7 @@ typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::insert(std::pair<K
     Key key = get_entry_key(itm);
     Node* ins;
     insert_req(node, nullptr, itm, ins);
-    return iterator(ins, key);
+    return iterator(ins, key, this);
 }
 
 template<class Key, class T>
@@ -173,14 +186,14 @@ typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::begin()
     if(!size())
         return end();
     Node* node = min_node();
-    return iterator(node,get_entry_key(node->first_child()));
+    return iterator(node,get_entry_key(node->first_child()),this);
 }
 
 template<class Key, class T>
 typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::end()
 {
     Key k = {};
-    return iterator(last, k);
+    return iterator(last, k, this);
 }
 
 template<class Key, class T>
@@ -192,9 +205,6 @@ typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::min_node()
 template<class Key, class T>
 typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::min_node(Node* node)
 {
-    if(!node){
-        node = get_root();
-    }
 
     // process node before search
     processSearchNodeStart(node);
@@ -203,7 +213,7 @@ typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::min_node(Node* node)
         return node;
 
     // recoursively search for min leaf node
-    min_node(node->first_child());
+    return min_node(node->first_child_node());
 
     // process node after search
     processSearchNodeEnd(node);
@@ -230,9 +240,6 @@ typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::max_node()
 template<class Key, class T>
 typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::max_node(Node* node)
 {
-    if(!node){
-        node = get_root();
-    }
 
     // process node before search
     processSearchNodeStart(node);
@@ -241,7 +248,7 @@ typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::max_node(Node* node)
         return node;
 
     // recoursively search for max leaf node
-    max_node(node->last_child());
+    return max_node(node->last_child_node());
 
     // process node after search
     processSearchNodeEnd(node);
@@ -418,9 +425,11 @@ bool BPlusTreeBase<Key,T>::erase_req(Node* node, Node* parent, Key& key)
 
     if(nodeRight){
         node->join_right(parent);
+        node->set_next_leaf(joinNode->next_leaf());
     }
     else{
         node->join_left(parent);
+        node->set_prev_leaf(joinNode->prev_leaf());
     }
 
     // Delete useless node
@@ -465,6 +474,13 @@ bool BPlusTreeBase<Key,T>::insert_req(Node* node, Node* parent, EntryItem*& item
         
         // Split node to nnode
         Key ins_key = node->split(nnode);
+        
+        // Update leaf nodes dependencies
+        if(is_leaf(node)){
+			nnode->set_next_leaf(node->next_leaf());
+			node->set_next_leaf(nnode);
+			nnode->set_prev_leaf(node);
+		}
 
         if(is_root(node)){
             // Create new root node

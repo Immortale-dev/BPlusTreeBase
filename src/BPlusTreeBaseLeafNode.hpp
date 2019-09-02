@@ -34,17 +34,17 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         void shift_right(Node* parent);
         void join_left(Node* parent);
         void join_right(Node* parent);
-        void set_next_leaf(LeafNode* node);
-        void set_prev_leaf(LeafNode* node);
+        void set_next_leaf(Node* node);
+        void set_prev_leaf(Node* node);
         Key get_key(child_item_type* item);
-        LeafNode* next_leaf();
-        LeafNode* prev_leaf();
+        Node* next_leaf();
+        Node* prev_leaf();
         childs_type_iterator childs_iterator();
 
     protected:
         child_type childs;
-        LeafNode* next_leaf_node;
-        LeafNode* prev_leaf_node;
+        Node* next_leaf_node = nullptr;
+        Node* prev_leaf_node = nullptr;
 };
 
 
@@ -228,13 +228,13 @@ void BPlusTreeBaseLeafNode<Key, T>::join_right(Node* parent)
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::set_next_leaf(LeafNode* node)
+void BPlusTreeBaseLeafNode<Key, T>::set_next_leaf(Node* node)
 {
     next_leaf_node = node;
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::set_prev_leaf(LeafNode* node)
+void BPlusTreeBaseLeafNode<Key, T>::set_prev_leaf(Node* node)
 {
     prev_leaf_node = node;
 }
@@ -246,13 +246,13 @@ Key BPlusTreeBaseLeafNode<Key, T>::get_key(child_item_type* item)
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseLeafNode<Key, T>::LeafNode* BPlusTreeBaseLeafNode<Key, T>::next_leaf()
+typename BPlusTreeBaseLeafNode<Key, T>::Node* BPlusTreeBaseLeafNode<Key, T>::next_leaf()
 {
     return next_leaf_node;
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseLeafNode<Key, T>::LeafNode* BPlusTreeBaseLeafNode<Key, T>::prev_leaf()
+typename BPlusTreeBaseLeafNode<Key, T>::Node* BPlusTreeBaseLeafNode<Key, T>::prev_leaf()
 {
     return prev_leaf_node;
 }

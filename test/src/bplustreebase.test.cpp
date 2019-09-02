@@ -11,7 +11,7 @@ using namespace std;
 
 
 void testBase(){
-    BPlusTreeBase<int,string> base(50);
+    BPlusTreeBase<int,string> base(10);
     base.insert(make_pair(1,"wtf"));
     base.insert(make_pair(5,"test"));
     base.insert(make_pair(15,"wtf"));
@@ -20,11 +20,6 @@ void testBase(){
     base.insert(make_pair(1,"not"));
     
     int cc = 4;
-    
-    int a;
-    cout << "PUT INT" << endl;
-    cin >> a;
-    
 
 	for(int i=100;i<146;i++){
 		base.insert(make_pair(i, "wtfi"+to_string(i)));
@@ -97,24 +92,47 @@ void testBase(){
 
 	base.erase(21);
 	
-	//////////////////////////////////////
 	
-	for(int i=0;i<1000000;i++){
-		base.insert(make_pair(i, "str"+to_string(i)));
+	cc = 0;
+	for(int i=10;i<100;i++){
+		base.insert(make_pair(i, "str"));
+		cc++;
 	}
 	
-	assert(base.size() == 1000000);
+	assert(base.end() == base.end());
+	assert(base.begin() != base.end());
 	
-	cout << "PUT INT" << endl;
-	cin >> a;
+	BPlusTreeBase<int,string>::iterator it = base.find(35);
 	
-	for(int i=0;i<1000000;i++){
-		base.erase(i);
+	//cout << *it << endl;
+	
+	cout << it->first << " " << it->second << endl;
+	it->second = "lola";
+	
+	it = base.find(35);
+	assert(it->second == "lola");
+	
+	
+	it = base.find(99);
+	assert(++it == base.end());
+	
+	
+	
+	int hh = 0;
+	for(auto &it : base){
+		assert(it.first == hh+10);
+		//cout << it.first << " " << it.second << endl;
+		hh++;
 	}
+	assert(hh == cc);
 	
-	cout << "PUT INT" << endl;
-	cin >> a;
-    
-    cout << " TESTS FOR BPlusTreeBase.hpp FINISHED SUCCESSFULLY" << endl;
+	
+	auto it2 = base.find(99);
+	assert((*it2).first == 99 && (*it2).second == "str");
+	
+	
+	assert(base[88] == "str");
+	
+    cout << "=================================================" << endl << "TESTS FOR BPlusTreeBase.hpp FINISHED SUCCESSFULLY" << endl << "=================================================" << endl;
     return;
 }
