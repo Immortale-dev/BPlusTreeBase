@@ -32,13 +32,13 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T>
         Key split(Node* node);
         Node* get_node(int index);
         int size();
-        int get_index(Key key);
+        int get_index(const Key& key);
         int get_index(Node* node);
         Node* first_child_node();
         Node* last_child_node();
-        Node* find(Key key);
-        Node* find_next(Key key);
-        Node* find_prev(Key key);
+        Node* find(const Key& key);
+        Node* find_next(const Key& key);
+        Node* find_prev(const Key& key);
         keys_type_iterator keys_iterator();
         nodes_type_iterator nodes_iterator();
         inline bool is_leaf();
@@ -229,7 +229,7 @@ inline bool BPlusTreeBaseInternalNode<Key, T>::is_leaf()
 }
 
 template<class Key, class T>
-int BPlusTreeBaseInternalNode<Key, T>::get_index(Key key)
+int BPlusTreeBaseInternalNode<Key, T>::get_index(const Key& key)
 {
     int mn=0,mx=size()-2,md;
     int res = size()-1;
@@ -264,14 +264,14 @@ int BPlusTreeBaseInternalNode<Key, T>::size()
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key, T>::find(Key key)
+typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key, T>::find(const Key& key)
 {
     int index = get_index(key);
     return get_node(index);
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key, T>::find_next(Key key)
+typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key, T>::find_next(const Key& key)
 {
     int index = get_index(key);
     index++;
@@ -281,7 +281,7 @@ typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key,
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key, T>::find_prev(Key key)
+typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key, T>::find_prev(const Key& key)
 {
     int index = get_index(key);
     index--;

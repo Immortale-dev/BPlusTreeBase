@@ -11,7 +11,20 @@ using namespace std;
 
 
 void testBase(){
-    BPlusTreeBase<int,string> base(10);
+	
+	
+	
+    BPlusTreeBase<int,string> base(3);
+    
+    auto itno = base.begin();
+    auto itno2 = base.end();
+    
+    assert(itno++ == itno2);
+    assert(itno == itno2);
+    
+    pair<int,string> lval = make_pair(17,"lol");
+    base.insert(lval);
+    
     base.insert(make_pair(1,"wtf"));
     base.insert(make_pair(5,"test"));
     base.insert(make_pair(15,"wtf"));
@@ -19,7 +32,16 @@ void testBase(){
     base.insert(make_pair(16,"not"));
     base.insert(make_pair(1,"not"));
     
-    int cc = 4;
+    auto itl = base.end();
+    itl--;
+    assert(itl->second == "lol");
+    
+    auto itf = base.end();
+    ++itf;
+    assert(itf == base.begin());
+    
+    
+    int cc = 5;
 
 	for(int i=100;i<146;i++){
 		base.insert(make_pair(i, "wtfi"+to_string(i)));
@@ -68,7 +90,7 @@ void testBase(){
 		base.erase(i);
 	}
 	
-	cc = 4;
+	cc = 5;
 	
 	assert(base.size() == cc);
 	
@@ -78,9 +100,10 @@ void testBase(){
 	base.erase(5);
 	base.erase(16);
 
-	assert(base.size() == 1);
+	assert(base.size() == 2);
 	
 	base.erase(15);
+	base.erase(17);
 	
 	assert(base.size() == 0);
 	
@@ -94,6 +117,75 @@ void testBase(){
 	
 	
 	cc = 0;
+	
+	
+	// Test structure
+	vector<int> result;
+	vector<int> compare;
+	
+	// T1
+	base.insert(make_pair(1,"1"));
+	base.insert(make_pair(2,"2"));
+	base.insert(make_pair(3,"3"));
+	base.insert(make_pair(4,"4"));
+	base.insert(make_pair(5,"5"));
+	base.insert(make_pair(6,"6"));
+	
+	result = base.bfs_result();
+	compare = {1,4,3,1,2,3,3,4,5,6};
+
+	assert(result.size() == compare.size());
+	for(size_t i=0;i<result.size();i++){
+		assert(result[i] == compare[i]);
+	}
+
+	//T2
+	base.insert(make_pair(17,"17"));
+	base.insert(make_pair(18,"18"));
+	base.insert(make_pair(19,"19"));
+	
+	result = base.bfs_result();
+	compare = {2,4,17,3,1,2,3,3,4,5,6,3,17,18,19};
+	
+	assert(result.size() == compare.size());
+	for(size_t i=0;i<result.size();i++){
+		assert(result[i] == compare[i]);
+	}
+	
+	//T3
+	base.erase(18);
+	
+	result = base.bfs_result();
+	compare = {1,4,3,1,2,3,5,4,5,6,17,19};
+	
+	assert(result.size() == compare.size());
+	for(size_t i=0;i<result.size();i++){
+		assert(result[i] == compare[i]);
+	}
+	
+	//T4
+	base.insert(make_pair(18,"18"));
+	base.insert(make_pair(10,"10"));
+	
+	base.erase(19);
+	
+	result = base.bfs_result();
+	compare = {2,4,10,3,1,2,3,3,4,5,6,3,10,17,18};
+	
+	assert(result.size() == compare.size());
+	for(size_t i=0;i<result.size();i++){
+		assert(result[i] == compare[i]);
+	}
+	
+
+	
+
+	// Clear
+	for(int i=0;i<100;i++)
+		base.erase(i);
+	//////////////
+	
+	
 	for(int i=10;i<100;i++){
 		base.insert(make_pair(i, "str"));
 		cc++;

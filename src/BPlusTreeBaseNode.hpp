@@ -9,16 +9,18 @@
 template<class Key, class T>
 class BPlusTreeBaseNode
 {
-    typedef BPlusTreeBaseNode Node;
-    typedef std::vector<Key> keys_type;
-    typedef std::vector<Node*> nodes_type;
-    typedef typename nodes_type::iterator nodes_type_iterator;
-    typedef typename keys_type::iterator keys_type_iterator;
-    typedef std::pair<Key,T> child_item_type;
-    typedef std::vector<child_item_type*> child_type;
-    typedef typename child_type::iterator childs_type_iterator;
-
-    public:
+	
+	typedef BPlusTreeBaseNode Node;
+	typedef std::vector<Key> keys_type;
+	typedef std::vector<Node*> nodes_type;
+	typedef typename nodes_type::iterator nodes_type_iterator;
+	typedef typename keys_type::iterator keys_type_iterator;
+	typedef std::pair<const Key,T> child_item_type;
+	typedef std::vector<child_item_type*> child_type;
+	
+	public:
+		typedef typename child_type::iterator childs_type_iterator;
+    
         BPlusTreeBaseNode();
         virtual ~BPlusTreeBaseNode();
 
@@ -28,7 +30,7 @@ class BPlusTreeBaseNode
         virtual void join_left(Node* parent) = 0;
         virtual void join_right(Node* parent) = 0;
         virtual Key split(Node* node) = 0;
-        virtual int get_index(Key key) = 0;
+        virtual int get_index(const Key& key) = 0;
 
         virtual inline bool is_leaf(){ return 0; };
         virtual Node* get_node(int index) { return nullptr; };
@@ -45,9 +47,9 @@ class BPlusTreeBaseNode
         virtual int get_index(child_item_type* node) { return 0; };
         virtual Node* first_child_node() { return nullptr; };
         virtual Node* last_child_node() { return nullptr; };
-        virtual Node* find(Key key) { return nullptr; };
-        virtual Node* find_next(Key key) { return nullptr; };
-        virtual Node* find_prev(Key key) { return nullptr; };
+        virtual Node* find(const Key& key) { return nullptr; };
+        virtual Node* find_next(const Key& key) { return nullptr; };
+        virtual Node* find_prev(const Key& key) { return nullptr; };
         virtual keys_type_iterator keys_iterator() { return {}; };
         virtual nodes_type_iterator nodes_iterator() { return {}; };
         virtual void release_node(child_item_type* node) {};
@@ -55,13 +57,13 @@ class BPlusTreeBaseNode
         virtual void insert(int index, childs_type_iterator s, childs_type_iterator e) {};
         virtual child_item_type* erase(int index) { return nullptr; };
         virtual void erase(childs_type_iterator s, childs_type_iterator e) {};
-        virtual bool exists(Key key) { return 0; };
+        virtual bool exists(const Key& key) { return 0; };
         virtual child_item_type* get(int index) { return nullptr; };
         virtual child_item_type* first_child() { return nullptr; };
         virtual child_item_type* last_child() { return nullptr; };
         virtual void set_next_leaf(Node* node) {};
         virtual void set_prev_leaf(Node* node) {};
-        virtual Key get_key(child_item_type* item) { return 0; };
+        virtual const Key get_key(child_item_type* item) { return 0; };
         virtual Node* next_leaf() { return nullptr; };
         virtual Node* prev_leaf() { return nullptr; };
         virtual childs_type_iterator childs_iterator() { return {}; };

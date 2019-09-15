@@ -10,7 +10,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
 {
     typedef BPlusTreeBaseNode<Key, T> Node;
     typedef BPlusTreeBaseLeafNode<Key, T> LeafNode;
-    typedef std::pair<Key,T> child_item_type;
+    typedef std::pair<const Key,T> child_item_type;
     typedef std::vector<child_item_type*> child_type;
     typedef typename child_type::iterator childs_type_iterator;
 
@@ -22,8 +22,8 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         child_item_type* erase(int index);
         void erase(childs_type_iterator s, childs_type_iterator e);
         inline bool is_leaf();
-        bool exists(Key key);
-        int get_index(Key key);
+        bool exists(const Key& key);
+        int get_index(const Key& key);
         int get_index(child_item_type* node);
         int size();
         child_item_type* get(int index);
@@ -36,7 +36,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         void join_right(Node* parent);
         void set_next_leaf(Node* node);
         void set_prev_leaf(Node* node);
-        Key get_key(child_item_type* item);
+        const Key get_key(child_item_type* item);
         Node* next_leaf();
         Node* prev_leaf();
         childs_type_iterator childs_iterator();
@@ -104,7 +104,7 @@ void BPlusTreeBaseLeafNode<Key, T>::insert(child_item_type* item)
 }
 
 template<class Key, class T>
-bool BPlusTreeBaseLeafNode<Key, T>::exists(Key key)
+bool BPlusTreeBaseLeafNode<Key, T>::exists(const Key& key)
 {
     int index = get_index(key);
     return index < size() && get_key(childs[index]) == key;
@@ -123,13 +123,13 @@ int BPlusTreeBaseLeafNode<Key, T>::size()
 }
 
 template<class Key, class T>
-int BPlusTreeBaseLeafNode<Key, T>::get_index(Key key)
+int BPlusTreeBaseLeafNode<Key, T>::get_index(const Key& key)
 {
     int mn=0,mx=size()-1,md;
     int res = size();
     while(mn<=mx){
         md = (mn+mx)/2;
-        Key k = get_key(childs[md]);
+        const Key& k = get_key(childs[md]);
         if(k < key){
             mn = md+1;
         }
@@ -240,7 +240,7 @@ void BPlusTreeBaseLeafNode<Key, T>::set_prev_leaf(Node* node)
 }
 
 template<class Key, class T>
-Key BPlusTreeBaseLeafNode<Key, T>::get_key(child_item_type* item)
+const Key BPlusTreeBaseLeafNode<Key, T>::get_key(child_item_type* item)
 {
     return item->first;
 }

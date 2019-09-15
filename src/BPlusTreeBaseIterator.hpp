@@ -12,7 +12,7 @@ template <class Key, class T>
 class BPlusTreeBaseIterator
 {
 	public:
-		typedef std::pair<Key, T> entry_item;
+		typedef std::pair<const Key, T> entry_item;
 		typedef BPlusTreeBaseNode<Key, T> Node;
 		typedef BPlusTreeBaseIterator<Key, T> self_type;
 		typedef entry_item value_type;
@@ -21,6 +21,7 @@ class BPlusTreeBaseIterator
 		typedef std::bidirectional_iterator_tag iterator_category;
 		typedef int difference_type;
 		typedef BPlusTreeBase<Key, T> instance_type;
+		typedef typename Node::childs_type_iterator childs_type_iterator;
 		
 		self_type operator++();
 		self_type operator++(int);
@@ -32,38 +33,58 @@ class BPlusTreeBaseIterator
 		bool operator!=(const self_type &r);
 		
 		BPlusTreeBaseIterator();
-        BPlusTreeBaseIterator(Node* node, Key key, instance_type* base);
+		BPlusTreeBaseIterator(const self_type& iter) = default;
+		BPlusTreeBaseIterator(const self_type&& iter);
+		self_type& operator=(const self_type&& iter);
+        BPlusTreeBaseIterator(Node* node, childs_type_iterator it, instance_type* base);
         virtual ~BPlusTreeBaseIterator();
         Key get_key();
         T get_value();
         
     protected:
         Node* node;
-        Key key;
+        childs_type_iterator item;
         instance_type* base;
-        
 };
 
+
+template <class Key, class T>
+BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(const self_type&& iter)
+{
+	this->item = std::move(iter.item);
+	this->node = std::move(iter.node);
+	this->base = std::move(iter.base);
+}
+
+template <class Key, class T>
+typename BPlusTreeBaseIterator<Key, T>::self_type& BPlusTreeBaseIterator<Key, T>::operator=(const self_type&& iter)
+{
+	this->item = std::move(iter.item);
+	this->node = std::move(iter.node);
+	this->base = std::move(iter.base);
+	return *this;
+}
 
 template <class Key, class T>
 BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator()
 {
     this->node = nullptr;
     this->base = nullptr;
+    this->item = nullptr;
 }
 
 template <class Key, class T>
-BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(Node* node, Key key, instance_type* base)
+BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(Node* node, childs_type_iterator it, instance_type* base)
 {
     this->node = node;
-    this->key = key;
     this->base = base;
+    this->item = it;
 }
 
 template <class Key, class T>
 Key BPlusTreeBaseIterator<Key, T>::get_key()
 {
-    return this->key;
+    return (*(this->item))->first;
 }
 
 template <class Key, class T>
@@ -75,21 +96,26 @@ BPlusTreeBaseIterator<Key, T>::~BPlusTreeBaseIterator()
 template <class Key, class T>
 T BPlusTreeBaseIterator<Key, T>::get_value()
 {
-	return (node->get(node->get_index(key)))->second;
+	return (*(this->item))->second;
 }
 
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator++()
-{
-	int index = node->get_index(key)+1;
-	if(index >= node->size()){
-		node = node->next_leaf();
-		index = 0;
+{	
+	if(!node){
+		node = base->min_node();
+		item = node->childs_iterator();
+		if(!node->size()){
+			node = nullptr;
+		}
+		return *this;
 	}
-	if(node){
-		base->processSearchNodeStart(node);
-		key = node->get(index)->first;
-		base->processSearchNodeEnd(node);
+	++item;
+	if(node->childs_iterator()+node->size() == item){
+		node = node->next_leaf();
+		if(node){
+			item = node->childs_iterator();
+		}
 	}
 	return *this;
 }
@@ -98,15 +124,20 @@ template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator++(int)
 {
 	self_type n = *this;
-	int index = node->get_index(key)+1;
-	if(index >= node->size()){
-		node = node->next_leaf();
-		index = 0;
+	if(!node){
+		node = base->min_node();
+		item = node->childs_iterator();
+		if(!node->size()){
+			node = nullptr;
+		}
+		return n;
 	}
-	if(node){
-		base->processSearchNodeStart(node);
-		key = node->get(index)->first;
-		base->processSearchNodeEnd(node);
+	++item;
+	if(node->childs_iterator()+node->size() == item){
+		node = node->next_leaf();
+		if(node){
+			item = node->childs_iterator();
+		}
 	}
 	return n;
 }
@@ -114,15 +145,20 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator--()
 {
-	int index = node->get_index(key)-1;
-	if(index < 0){
-		node = node->prev_leaf();
-		index = node->size()-1;
+	if(!node){
+		node = base->max_node();
+		item = node->childs_iterator()+(node->size()-1);
+		if(!node->size()){
+			node = nullptr;
+		}
+		return *this;
 	}
-	if(node){
-		base->processSearchNodeStart(node);
-		key = node->get(index)->first;
-		base->processSearchNodeEnd(node);
+	--item;
+	if(node->childs_iterator()+node->size() == item){
+		node = node->prev_leaf();
+		if(node){
+			item = node->childs_iterator()+(node->size()-1);
+		}
 	}
 	return *this;
 }
@@ -131,15 +167,20 @@ template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator--(int)
 {
 	self_type n = *this;
-	int index = node->get_index(key)-1;
-	if(index < 0){
-		node = node->prev_leaf();
-		index = node->size()-1;
+	if(!node){
+		node = base->max_node();
+		item = node->childs_iterator()+(node->size()-1);
+		if(!node->size()){
+			node = nullptr;
+		}
+		return n;
 	}
-	if(node){
-		base->processSearchNodeStart(node);
-		key = node->get(index)->first;
-		base->processSearchNodeEnd(node);
+	--item;
+	if(node->childs_iterator()+node->size() == item){
+		node = node->prev_leaf();
+		if(node){
+			item = node->childs_iterator()+(node->size()-1);
+		}
 	}
 	return n;
 }
@@ -147,15 +188,13 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::reference BPlusTreeBaseIterator<Key, T>::operator*()
 {
-	int index = node->get_index(key);
-	return *(node->get(index));
+	return *(*item);
 }
 
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::pointer BPlusTreeBaseIterator<Key, T>::operator->()
 {
-	int index = node->get_index(key);
-	return (node->get(index));
+	return *item;
 }
 
 template <class Key, class T>
@@ -163,7 +202,7 @@ bool BPlusTreeBaseIterator<Key, T>::operator==(const self_type &r)
 {
 	if(!node && !r.node)
 		return base == r.base;
-	return (node == r.node && key == r.key);
+	return (node == r.node && item == r.item);
 }
 
 template <class Key, class T>
@@ -171,7 +210,7 @@ bool BPlusTreeBaseIterator<Key, T>::operator!=(const self_type &r)
 {
 	if(!node && !r.node)
 		return base != r.base;
-	return node != r.node || key != r.key;
+	return node != r.node || item != r.item;
 }
 
 
