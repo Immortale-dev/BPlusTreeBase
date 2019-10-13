@@ -70,7 +70,7 @@ BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator()
 {
     this->node = nullptr;
     this->base = nullptr;
-    this->item = nullptr;
+    //this->item = nullptr;
 }
 
 template <class Key, class T>

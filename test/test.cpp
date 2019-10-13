@@ -1,9 +1,6 @@
-#include <iostream>
+#include "qtest.hpp"
 
 #include "bplustreebase.test.cpp"
 
 
-int main(){
-    testBase();
-    return 0;
-}
+int main(){ return 0; }

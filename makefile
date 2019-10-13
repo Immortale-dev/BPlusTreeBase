@@ -16,12 +16,12 @@ all: generate_o generate_t
 generate_o: ${OBJS} ${OBJST}
 
 generate_t: 
-	${CC} -Isrc -Itest/src -o test/test test/test.cpp 
+	${CC} -Isrc -Itest/src -Itest -o test/test test/test.cpp 
 	
 	
 	
 %.test.o: %.test.cpp
-	${CC} $(CFLAGS) $< -o $@ -Isrc
+	${CC} $(CFLAGS) $< -o $@ -Isrc -Itest
 
 %.o: %.hpp
 	${CC} ${CFLAGS} $< -o $@
