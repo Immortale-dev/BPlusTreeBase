@@ -34,8 +34,8 @@ class BPlusTreeBaseIterator
 		
 		BPlusTreeBaseIterator();
 		BPlusTreeBaseIterator(const self_type& iter) = default;
-		BPlusTreeBaseIterator(const self_type&& iter);
-		self_type& operator=(const self_type&& iter);
+		BPlusTreeBaseIterator(self_type&& iter);
+		self_type& operator=(self_type&& iter);
         BPlusTreeBaseIterator(Node* node, childs_type_iterator it, instance_type* base);
         virtual ~BPlusTreeBaseIterator();
         Key get_key();
@@ -49,7 +49,7 @@ class BPlusTreeBaseIterator
 
 
 template <class Key, class T>
-BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(const self_type&& iter)
+BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(self_type&& iter)
 {
 	this->item = std::move(iter.item);
 	this->node = std::move(iter.node);
@@ -57,7 +57,7 @@ BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(const self_type&& iter)
 }
 
 template <class Key, class T>
-typename BPlusTreeBaseIterator<Key, T>::self_type& BPlusTreeBaseIterator<Key, T>::operator=(const self_type&& iter)
+typename BPlusTreeBaseIterator<Key, T>::self_type& BPlusTreeBaseIterator<Key, T>::operator=(self_type&& iter)
 {
 	this->item = std::move(iter.item);
 	this->node = std::move(iter.node);
