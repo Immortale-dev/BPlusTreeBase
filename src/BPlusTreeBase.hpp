@@ -32,6 +32,7 @@ class BPlusTreeBase
         long size();
         T operator[](Key key);
     
+		int mutex_count = 0;
     // DEBUG METHODS
 	#ifdef DEBUG
 		void print_tree();
@@ -57,10 +58,10 @@ class BPlusTreeBase
         bool is_leaf(Node* node);
         void set_root(Node* node);
         void release_node(Node* node);
-        void processSearchNodeStart(Node* node);
-        void processSearchNodeEnd(Node* node);
-        void processInsertNode(Node* node);
-        void processDeleteNode(Node* node);
+        virtual void processSearchNodeStart(Node* node);
+        virtual void processSearchNodeEnd(Node* node);
+        virtual void processInsertNode(Node* node);
+        virtual void processDeleteNode(Node* node);
         void release_entry_item(EntryItem* item);
         EntryItem* create_entry_item(Key key, T val);
         long v_count;
@@ -129,8 +130,8 @@ template<class Key, class T>
 typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::insert(value_type item)
 {
     EntryItem* itm = create_entry_item(item.first, item.second);
-    Node* node = get_root();
     const Key& key = get_entry_key(itm);
+    Node* node = get_root();
     Node* ins = nullptr;
     insert_req(node, nullptr, itm, ins);
     
@@ -181,7 +182,6 @@ typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::min_node()
 template<class Key, class T>
 typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::min_node(Node* node)
 {
-
     // process node before search
     processSearchNodeStart(node);
 
@@ -190,12 +190,15 @@ typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::min_node(Node* node)
 		processSearchNodeEnd(node);
         return node;
 	}
-
-    // recoursively search for min leaf node
-    return min_node(node->first_child_node());
-
+	
+	// Get left most node
+    Node* nnode = node->first_child_node();
+    
     // process node after search
     processSearchNodeEnd(node);
+    
+    // recoursively search for min leaf node
+    return min_node(nnode);
 }
 
 template<class Key, class T>
@@ -228,12 +231,15 @@ typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key,T>::max_node(Node* node)
 		processSearchNodeEnd(node);
         return node;
 	}
-
-    // recoursively search for max leaf node
-    return max_node(node->last_child_node());
+	
+	// Get right most node
+	Node* nnode = node->last_child_node();
 
     // process node after search
     processSearchNodeEnd(node);
+    
+    // recoursively search for max leaf node
+    return max_node(nnode);
 }
 
 template<class Key, class T>
@@ -273,12 +279,16 @@ typename BPlusTreeBase<Key,T>::Node* BPlusTreeBase<Key, T>::get_root()
 template<class Key, class T>
 void BPlusTreeBase<Key, T>::processSearchNodeStart(Node* node)
 {
+	mutex_count++;
+	node->lock();
     return;
 }
 
 template<class Key, class T>
 void BPlusTreeBase<Key, T>::processSearchNodeEnd(Node* node)
 {
+	mutex_count--;
+	node->unlock();
     return;
 }
 
@@ -419,7 +429,9 @@ bool BPlusTreeBase<Key,T>::erase_req(Node* node, Node* parent, const Key& key)
 
     // Delete useless node
     processDeleteNode(joinNode);
+    
     processSearchNodeEnd(joinNode);
+    processSearchNodeEnd(node);
 
     // Clear node memory
     release_node(joinNode);
@@ -457,6 +469,7 @@ bool BPlusTreeBase<Key,T>::insert_req(Node* node, Node* parent, EntryItem*& item
 
         // Create new node to split to
         nnode = is_leaf(node) ? create_leaf_node() : create_internal_node();
+        processSearchNodeStart(nnode);
         
         // Split node to nnode
         Key ins_key = node->split(nnode);
@@ -476,6 +489,7 @@ bool BPlusTreeBase<Key,T>::insert_req(Node* node, Node* parent, EntryItem*& item
         if(is_root(node)){
             // Create new root node
             parent = create_internal_node();
+            processSearchNodeStart(parent);
             // Add items to parent node
             parent->add_keys(0, ins_key);
             parent->add_nodes(0, node);

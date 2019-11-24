@@ -47,6 +47,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			
 			IT("Size of tree should be equal 5", {
 				EXPECT(base.size()).toBe(5);
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});
 		});
 		
@@ -57,6 +58,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			});
 			IT("Size of tree should be equal 5", {
 				EXPECT(base.size()).toBe(5);
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});
 		});
 		
@@ -75,6 +77,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				});
 				IT("Value should be equal to `lol`", {
 					EXPECT(itl->second).toBe("lol");
+					INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 				});
 			});
 			
@@ -84,6 +87,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				});
 				IT("Iterator should be equal to base.begin()", {
 					EXPECT(itl).toBe(base.begin());
+					INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 				});
 			});
 		});
@@ -111,14 +115,17 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			
 			IT("Expect base.size to be equal `cc`", {
 				EXPECT(base.size()).toBe(cc);
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});
 
 			IT("Value of item with `key` 15 to be `wtf`", {
 				EXPECT(base.find(15).get_value()).toBe("wtf");
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});
 			
 			IT("Value of item with `key` 145 to be wtfi145", {
 				EXPECT(base.find(145).get_value()).toBe("wtfi145");
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});
 			
 			DESCRIBE("Remove item with `key` 125", {
@@ -128,8 +135,8 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				});
 				
 				IT("base.size() should be as expected", {
-					cout << "WTDF?? " << cc << " " << base.size() << endl;
 					EXPECT(base.size()).toBe(cc);
+					INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 				});
 			});
 			
@@ -143,6 +150,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				
 				IT("size of three should be expected", {
 					EXPECT(base.size()).toBe(cc);
+					INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 				});
 				
 				DESCRIBE("Remove items in interval [600,900)", {
@@ -155,6 +163,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 					
 					IT("size of three should be expected", {
 						EXPECT(base.size()).toBe(cc);
+						INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 					});
 				});
 			});
@@ -168,6 +177,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			});
 			IT("Size of tree should be equal to 2", {
 				EXPECT(base.size()).toBe(2);
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});
 			
 			DESCRIBE("Remove items with keys 15 and 17", {
@@ -179,6 +189,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				
 				IT("Tree should be empty",{
 					EXPECT(base.size()).toBe(0);
+					INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 				});
 			});
 		});
@@ -196,6 +207,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 		
 		IT("Tree should contains 1 item", {
 			EXPECT(base.size()).toBe(1);
+			INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 		});
 	});
 	
@@ -236,6 +248,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				 *    1,2,3   4,5,6    17,18,19
 				 */
 				EXPECT(base.bfs_result()).toBeIterableEqual({2,4,17,3,1,2,3,3,4,5,6,3,17,18,19});
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});
 			
 			DESCRIBE("And remove item with key=18", {
@@ -252,6 +265,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 					 *    1,2,3   4,5,6,17,19
 					 */
 					EXPECT(base.bfs_result()).toBeIterableEqual({1,4,3,1,2,3,5,4,5,6,17,19});
+					INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 				});
 			});
 			
@@ -262,6 +276,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				});
 				IT("Then there should be 3 leafs with 3 items in each, and the structure to be {2,4,10,3,1,2,3,3,4,5,6,3,10,17,18}", {
 					EXPECT(base.bfs_result()).toBeIterableEqual({2,4,10,3,1,2,3,3,4,5,6,3,10,17,18});
+					INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 				});
 			});
 		});
@@ -279,10 +294,12 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 		
 		IT("bese.end() should be equal to base.end()", {
 			EXPECT(base.end()).toBe(base.end());
+			INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 		});
 		
 		IT("base.begin() should not to be equal to base.end()", {
 			EXPECT(base.begin()).NOT().toBe(base.end());
+			INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 		});
 		
 		DESCRIBE("Change item value with key 35 to `lola`", {
@@ -295,12 +312,14 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			IT("Item with key 35 value should be lola", {
 				it = base.find(35);
 				EXPECT(it->second).toBe("lola");
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});			
 		});
 		
 		IT("Next item to item with key 99 to be equal to base.end()", {
 			auto it = base.find(99);
 			EXPECT(++it).toBe(base.end());
+			INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 		});
 		
 		DESCRIBE("Iterate through all the items and save the count value", {
@@ -317,6 +336,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			IT("counter should be equal to `cc`", {
 				EXPECT(hh).toBe(cc);
 				EXPECT(fail).toBe(false);
+				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 			});
 		});
 		
@@ -324,10 +344,12 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			auto it2 = base.find(99);
 			EXPECT((*it2).first).toBe(99);
 			EXPECT((*it2).second).toBe("str");
+			INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 		});
 		
 		IT("base[88] should equal to `str`", {
 			EXPECT(base[88]).toBe("str");
+			INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 		});
 	});
 });

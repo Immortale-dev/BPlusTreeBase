@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <mutex>
 
 
 template<class Key, class T>
@@ -31,6 +32,8 @@ class BPlusTreeBaseNode
         virtual void join_right(Node* parent) = 0;
         virtual Key split(Node* node) = 0;
         virtual int get_index(const Key& key) = 0;
+        virtual void lock(){ mtx.lock(); };
+        virtual void unlock(){ mtx.unlock(); };
 
         virtual inline bool is_leaf(){ return 0; };
         virtual Node* get_node(int index) { return nullptr; };
@@ -67,6 +70,9 @@ class BPlusTreeBaseNode
         virtual Node* next_leaf() { return nullptr; };
         virtual Node* prev_leaf() { return nullptr; };
         virtual childs_type_iterator childs_iterator() { return {}; };
+        
+        void* data = nullptr;
+        std::mutex mtx;
 };
 
 template<class Key, class T>
