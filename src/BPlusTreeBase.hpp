@@ -485,6 +485,12 @@ bool BPlusTreeBase<Key,T>::insert_req(Node* node, Node* parent, EntryItem*& item
 			node->set_next_leaf(nnode);
 			nnode->set_prev_leaf(node);
 		}
+		
+		// Process newly created node
+        processInsertNode(nnode);
+
+        // Process Node after search
+        processSearchNodeEnd(nnode);
 
         if(is_root(node)){
             // Create new root node
@@ -507,12 +513,6 @@ bool BPlusTreeBase<Key,T>::insert_req(Node* node, Node* parent, EntryItem*& item
             parent->add_keys(index, ins_key);
             parent->add_nodes(index+1, nnode);
         }
-
-        // Process newly created node
-        processInsertNode(nnode);
-
-        // Process Node after search
-        processSearchNodeEnd(nnode);
     }
 
     if(nodeChanged){
