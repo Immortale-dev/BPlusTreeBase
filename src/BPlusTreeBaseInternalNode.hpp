@@ -15,6 +15,8 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T>
     typedef typename keys_type::iterator keys_type_iterator;
 
     public:
+        BPlusTreeBaseInternalNode();
+        BPlusTreeBaseInternalNode(keys_type* keys, nodes_type* nodes);
         virtual ~BPlusTreeBaseInternalNode();
         void release_node(Node* node);
         void add_keys(int ind, Key key);
@@ -44,17 +46,32 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T>
         inline bool is_leaf();
 
     protected:
-        keys_type child_keys;
-        nodes_type child_nodes;
+        keys_type* child_keys = nullptr;
+        nodes_type* child_nodes = nullptr;
 };
 
 
+template<class Key, class T>
+BPlusTreeBaseInternalNode<Key, T>::BPlusTreeBaseInternalNode()
+{
+	child_keys = new keys_type();
+	child_nodes = new nodes_type();
+}
+
+template<class Key, class T>
+BPlusTreeBaseInternalNode<Key, T>::BPlusTreeBaseInternalNode(keys_type* keys, nodes_type* nodes)
+{
+	child_keys = keys;
+	child_nodes = nodes;
+}
 
 template<class Key, class T>
 BPlusTreeBaseInternalNode<Key, T>::~BPlusTreeBaseInternalNode()
 {
     for(int i=0;i<size();i++)
-        release_node(child_nodes[i]);
+        release_node((*child_nodes)[i]);
+	delete child_keys;
+	delete child_nodes;
 }
 
 template<class Key, class T>
@@ -67,48 +84,48 @@ void BPlusTreeBaseInternalNode<Key, T>::release_node(Node* node)
 template<class Key, class T>
 void BPlusTreeBaseInternalNode<Key, T>::add_keys(int ind, Key key)
 {
-    child_keys.insert(child_keys.begin()+ind, key);
+    child_keys->insert(child_keys->begin()+ind, key);
 }
 
 template<class Key, class T>
 void BPlusTreeBaseInternalNode<Key, T>::add_keys(int ind, keys_type_iterator s, keys_type_iterator e)
 {
-    child_keys.insert(child_keys.begin()+ind, s, e);
+    child_keys->insert(child_keys->begin()+ind, s, e);
 }
 
 template<class Key, class T>
 void BPlusTreeBaseInternalNode<Key, T>::remove_keys(int ind)
 {
-    child_keys.erase(child_keys.begin()+ind);
+    child_keys->erase(child_keys->begin()+ind);
 }
 
 template<class Key, class T>
 void BPlusTreeBaseInternalNode<Key, T>::remove_keys(keys_type_iterator s, keys_type_iterator e)
 {
-    child_keys.erase(s, e);
+    child_keys->erase(s, e);
 }
 
 template<class Key, class T>
 void BPlusTreeBaseInternalNode<Key, T>::add_nodes(int ind, Node* node)
 {
-    child_nodes.insert(child_nodes.begin()+ind, node);
+    child_nodes->insert(child_nodes->begin()+ind, node);
 }
 
 template<class Key, class T>
 void BPlusTreeBaseInternalNode<Key, T>::add_nodes(int ind, nodes_type_iterator s, nodes_type_iterator e){
-    child_nodes.insert(child_nodes.begin()+ind, s, e);
+    child_nodes->insert(child_nodes->begin()+ind, s, e);
 }
 
 template<class Key, class T>
 void BPlusTreeBaseInternalNode<Key, T>::remove_nodes(int ind)
 {
-    child_nodes.erase(child_nodes.begin()+ind);
+    child_nodes->erase(child_nodes->begin()+ind);
 }
 
 template<class Key, class T>
 void BPlusTreeBaseInternalNode<Key, T>::remove_nodes(nodes_type_iterator s, nodes_type_iterator e)
 {
-    child_nodes.erase(s, e);
+    child_nodes->erase(s, e);
 }
 
 template<class Key, class T>
@@ -235,7 +252,7 @@ int BPlusTreeBaseInternalNode<Key, T>::get_index(const Key& key)
     int res = size()-1;
     while(mn<=mx){
         md = (mn+mx)/2;
-        if(child_keys[md] <= key){
+        if((*child_keys)[md] <= key){
             mn = md+1;
         }
         else{
@@ -251,7 +268,7 @@ int BPlusTreeBaseInternalNode<Key, T>::get_index(Node* node)
 {
     int sz = size();
     for(int i=0;i<sz;i++){
-        if(child_nodes[i] == node)
+        if((*child_nodes)[i] == node)
             return i;
     }
     return 0;
@@ -260,7 +277,7 @@ int BPlusTreeBaseInternalNode<Key, T>::get_index(Node* node)
 template<class Key, class T>
 int BPlusTreeBaseInternalNode<Key, T>::size()
 {
-    return child_nodes.size();
+    return child_nodes->size();
 }
 
 template<class Key, class T>
@@ -305,19 +322,19 @@ typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key,
 template<class Key, class T>
 typename BPlusTreeBaseInternalNode<Key, T>::Node* BPlusTreeBaseInternalNode<Key, T>::get_node(int index)
 {
-    return child_nodes[index];
+    return (*child_nodes)[index];
 }
 
 template<class Key, class T>
 typename BPlusTreeBaseInternalNode<Key, T>::keys_type_iterator BPlusTreeBaseInternalNode<Key, T>::keys_iterator()
 {
-    return child_keys.begin();
+    return child_keys->begin();
 }
 
 template<class Key, class T>
 typename BPlusTreeBaseInternalNode<Key, T>::nodes_type_iterator BPlusTreeBaseInternalNode<Key, T>::nodes_iterator()
 {
-    return child_nodes.begin();
+    return child_nodes->begin();
 }
 
 
