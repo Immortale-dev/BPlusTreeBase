@@ -19,6 +19,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         BPlusTreeBaseLeafNode(child_type* ch);
         virtual ~BPlusTreeBaseLeafNode();
         void release_node(child_item_type* node);
+        void set_childs(child_type* ch);
         void insert(child_item_type* item);
         void insert(int index, childs_type_iterator s, childs_type_iterator e);
         child_item_type* erase(int index);
@@ -59,7 +60,7 @@ BPlusTreeBaseLeafNode<Key, T>::BPlusTreeBaseLeafNode()
 template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::BPlusTreeBaseLeafNode(child_type* ch)
 {
-	childs = ch;
+	set_childs(ch);
 }
 
 template<class Key, class T>
@@ -78,6 +79,12 @@ void BPlusTreeBaseLeafNode<Key, T>::release_node(child_item_type* node)
 {
     // TODO: replace with allocator methods
     delete node;
+}
+
+template<class Key, class T>
+void BPlusTreeBaseLeafNode<Key, T>::set_childs(child_type* ch)
+{
+	childs = ch;
 }
 
 template<class Key, class T>

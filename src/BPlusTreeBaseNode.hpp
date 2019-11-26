@@ -46,6 +46,9 @@ class BPlusTreeBaseNode
         virtual void remove_keys(keys_type_iterator s, keys_type_iterator e) {};
         virtual void remove_nodes(int ind) {};
         virtual void remove_nodes(nodes_type_iterator s, nodes_type_iterator e) {};
+        virtual void set_keys(keys_type* keys) {};
+        virtual void set_nodes(nodes_type* nodes) {};
+        virtual void set_childs(child_type* ch) {};
         virtual int get_index(Node* node) { return 0; };
         virtual int get_index(child_item_type* node) { return 0; };
         virtual Node* first_child_node() { return nullptr; };
