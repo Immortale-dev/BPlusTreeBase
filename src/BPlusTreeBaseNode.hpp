@@ -49,6 +49,9 @@ class BPlusTreeBaseNode
         virtual void set_keys(keys_type* keys) {};
         virtual void set_nodes(nodes_type* nodes) {};
         virtual void set_childs(child_type* ch) {};
+        virtual keys_type* get_keys() { return nullptr; };
+        virtual nodes_type* get_nodes() { return nullptr; };
+        virtual child_type* get_childs() { return nullptr; };
         virtual int get_index(Node* node) { return 0; };
         virtual int get_index(child_item_type* node) { return 0; };
         virtual Node* first_child_node() { return nullptr; };

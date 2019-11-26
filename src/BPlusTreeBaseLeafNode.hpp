@@ -20,6 +20,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         virtual ~BPlusTreeBaseLeafNode();
         void release_node(child_item_type* node);
         void set_childs(child_type* ch);
+        child_type* get_childs();
         void insert(child_item_type* item);
         void insert(int index, childs_type_iterator s, childs_type_iterator e);
         child_item_type* erase(int index);
@@ -61,6 +62,12 @@ template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::BPlusTreeBaseLeafNode(child_type* ch)
 {
 	set_childs(ch);
+}
+
+template<class Key, class T>
+typename BPlusTreeBaseLeafNode<Key, T>::child_type* BPlusTreeBaseLeafNode<Key, T>::get_childs()
+{
+	return childs;
 }
 
 template<class Key, class T>

@@ -21,6 +21,8 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T>
         void release_node(Node* node);
         void set_keys(keys_type* keys);
         void set_nodes(nodes_type* nodes);
+        keys_type* get_keys();
+        nodes_type* get_nodes();
         void add_keys(int ind, Key key);
         void add_keys(int ind, keys_type_iterator s, keys_type_iterator e);
         void add_nodes(int ind, Node* node);
@@ -65,6 +67,18 @@ BPlusTreeBaseInternalNode<Key, T>::BPlusTreeBaseInternalNode(keys_type* keys, no
 {
 	set_keys(keys);
 	set_nodes(nodes);
+}
+
+template<class Key, class T>
+typename BPlusTreeBaseInternalNode<Key, T>::keys_type* BPlusTreeBaseInternalNode<Key, T>::get_keys()
+{
+	return child_keys;
+}
+
+template<class Key, class T>
+typename BPlusTreeBaseInternalNode<Key, T>::nodes_type* BPlusTreeBaseInternalNode<Key, T>::get_nodes()
+{
+	return child_nodes;
 }
 
 template<class Key, class T>
