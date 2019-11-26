@@ -68,7 +68,9 @@ BPlusTreeBaseLeafNode<Key, T>::~BPlusTreeBaseLeafNode()
     for(int i=0;i<size();i++){
         release_node((*childs)[i]);
 	}
-	delete childs;
+	if(childs){
+		delete childs;
+	}
 }
 
 template<class Key, class T>

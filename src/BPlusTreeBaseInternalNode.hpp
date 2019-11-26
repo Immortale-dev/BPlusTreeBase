@@ -68,10 +68,15 @@ BPlusTreeBaseInternalNode<Key, T>::BPlusTreeBaseInternalNode(keys_type* keys, no
 template<class Key, class T>
 BPlusTreeBaseInternalNode<Key, T>::~BPlusTreeBaseInternalNode()
 {
-    for(int i=0;i<size();i++)
+    for(int i=0;i<size();i++){
         release_node((*child_nodes)[i]);
-	delete child_keys;
-	delete child_nodes;
+	}
+	if(child_keys){
+		delete child_keys;
+	}
+	if(child_nodes){
+		delete child_nodes;
+	}
 }
 
 template<class Key, class T>
