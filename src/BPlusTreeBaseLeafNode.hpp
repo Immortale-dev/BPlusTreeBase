@@ -146,6 +146,8 @@ int BPlusTreeBaseLeafNode<Key, T>::get_index(child_item_type* node)
 template<class Key, class T>
 int BPlusTreeBaseLeafNode<Key, T>::size()
 {
+	if(!childs)
+		return 0;
     return childs->size();
 }
 

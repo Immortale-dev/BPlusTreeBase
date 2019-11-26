@@ -310,6 +310,8 @@ int BPlusTreeBaseInternalNode<Key, T>::get_index(Node* node)
 template<class Key, class T>
 int BPlusTreeBaseInternalNode<Key, T>::size()
 {
+	if(!child_nodes)
+		return 0;
     return child_nodes->size();
 }
 
