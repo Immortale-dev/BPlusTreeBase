@@ -4,11 +4,15 @@
 #include "BPlusTreeBaseNode.hpp"
 #include <utility>
 #include <map>
+#include <memory>
+
+//int bbb = 0;
 
 template<class Key, class T>
 class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
 {
     typedef BPlusTreeBaseNode<Key, T> Node;
+    typedef std::shared_ptr<Node> node_ptr;
     typedef BPlusTreeBaseLeafNode<Key, T> LeafNode;
     typedef std::pair<const Key,T> child_item_type;
     typedef std::vector<child_item_type*> child_type;
@@ -17,7 +21,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
     public:
         BPlusTreeBaseLeafNode();
         BPlusTreeBaseLeafNode(child_type* ch);
-        virtual ~BPlusTreeBaseLeafNode();
+        ~BPlusTreeBaseLeafNode();
         void release_node(child_item_type* node);
         void set_childs(child_type* ch);
         child_type* get_childs();
@@ -33,22 +37,22 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         child_item_type* get(int index);
         child_item_type* first_child();
         child_item_type* last_child();
-        Key split(Node* node);
-        void shift_left(Node* parent);
-        void shift_right(Node* parent);
-        void join_left(Node* parent);
-        void join_right(Node* parent);
-        void set_next_leaf(Node* node);
-        void set_prev_leaf(Node* node);
+        Key split(node_ptr node);
+        void shift_left(node_ptr parent);
+        void shift_right(node_ptr parent);
+        void join_left(node_ptr parent);
+        void join_right(node_ptr parent);
+        void set_next_leaf(node_ptr node);
+        void set_prev_leaf(node_ptr node);
         const Key get_key(child_item_type* item);
-        Node* next_leaf();
-        Node* prev_leaf();
+        node_ptr next_leaf();
+        node_ptr prev_leaf();
         childs_type_iterator childs_iterator();
 
     protected:
         child_type* childs;
-        Node* next_leaf_node = nullptr;
-        Node* prev_leaf_node = nullptr;
+        node_ptr next_leaf_node = nullptr;
+        node_ptr prev_leaf_node = nullptr;
 };
 
 
@@ -56,6 +60,7 @@ template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::BPlusTreeBaseLeafNode()
 {
 	childs = new child_type();
+	//bbb++;
 }
 
 template<class Key, class T>
@@ -73,6 +78,7 @@ typename BPlusTreeBaseLeafNode<Key, T>::child_type* BPlusTreeBaseLeafNode<Key, T
 template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::~BPlusTreeBaseLeafNode()
 {
+	//bbb--;
     for(int i=0;i<size();i++){
         release_node((*childs)[i]);
 	}
@@ -189,7 +195,7 @@ typename BPlusTreeBaseLeafNode<Key, T>::child_item_type* BPlusTreeBaseLeafNode<K
 }
 
 template<class Key, class T>
-Key BPlusTreeBaseLeafNode<Key, T>::split(Node* node)
+Key BPlusTreeBaseLeafNode<Key, T>::split(node_ptr node)
 {
     childs_type_iterator c_start = childs_iterator()+size()/2;
     childs_type_iterator c_end = childs_iterator()+size();
@@ -199,12 +205,12 @@ Key BPlusTreeBaseLeafNode<Key, T>::split(Node* node)
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::shift_left(Node* parent)
+void BPlusTreeBaseLeafNode<Key, T>::shift_left(node_ptr parent)
 {
     // Left node index
     int index = parent->get_index(this)-1;
     // Get shift node
-    Node* prev = parent->get_node(index);
+    node_ptr prev = parent->get_node(index);
     // Shift item
     insert(prev->last_child());
     prev->erase(prev->size()-1);
@@ -213,12 +219,12 @@ void BPlusTreeBaseLeafNode<Key, T>::shift_left(Node* parent)
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::shift_right(Node* parent)
+void BPlusTreeBaseLeafNode<Key, T>::shift_right(node_ptr parent)
 {
     // Left node index
     int index = parent->get_index(this)+1;
     // Get shift node
-    Node* next = parent->get_node(index);
+    node_ptr next = parent->get_node(index);
     // Shift item
     insert(next->first_child());
     next->erase(0);
@@ -227,12 +233,12 @@ void BPlusTreeBaseLeafNode<Key, T>::shift_right(Node* parent)
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::join_left(Node* parent)
+void BPlusTreeBaseLeafNode<Key, T>::join_left(node_ptr parent)
 {
     // Get join node index
     int index = parent->get_index(this)-1;
     // Get join node
-    Node* prev = parent->get_node(index);
+    node_ptr prev = parent->get_node(index);
     // Move all items from join node
     insert(0, prev->childs_iterator(), prev->childs_iterator()+prev->size());
     prev->erase(prev->childs_iterator(), prev->childs_iterator()+prev->size());
@@ -242,12 +248,12 @@ void BPlusTreeBaseLeafNode<Key, T>::join_left(Node* parent)
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::join_right(Node* parent)
+void BPlusTreeBaseLeafNode<Key, T>::join_right(node_ptr parent)
 {
     // Get join node index
     int index = parent->get_index(this)+1;
     // Get join node
-    Node* next = parent->get_node(index);
+    node_ptr next = parent->get_node(index);
     // Move all items from join node
     insert(size(), next->childs_iterator(), next->childs_iterator()+next->size());
     next->erase(next->childs_iterator(), next->childs_iterator()+next->size());
@@ -257,13 +263,13 @@ void BPlusTreeBaseLeafNode<Key, T>::join_right(Node* parent)
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::set_next_leaf(Node* node)
+void BPlusTreeBaseLeafNode<Key, T>::set_next_leaf(node_ptr node)
 {
     next_leaf_node = node;
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::set_prev_leaf(Node* node)
+void BPlusTreeBaseLeafNode<Key, T>::set_prev_leaf(node_ptr node)
 {
     prev_leaf_node = node;
 }
@@ -275,13 +281,13 @@ const Key BPlusTreeBaseLeafNode<Key, T>::get_key(child_item_type* item)
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseLeafNode<Key, T>::Node* BPlusTreeBaseLeafNode<Key, T>::next_leaf()
+typename BPlusTreeBaseLeafNode<Key, T>::node_ptr BPlusTreeBaseLeafNode<Key, T>::next_leaf()
 {
     return next_leaf_node;
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseLeafNode<Key, T>::Node* BPlusTreeBaseLeafNode<Key, T>::prev_leaf()
+typename BPlusTreeBaseLeafNode<Key, T>::node_ptr BPlusTreeBaseLeafNode<Key, T>::prev_leaf()
 {
     return prev_leaf_node;
 }

@@ -14,10 +14,10 @@ using namespace std;
 
 DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 	
-	auto* baseT = new BPlusTreeBase<int,string>(3);
-	auto& base = *baseT;
+	//auto* baseT = new BPlusTreeBase<int,string>(3);
+	//auto& base = *baseT;
 	
-		
+	auto base = BPlusTreeBase<int,string>(3);
 		
 	DESCRIBE("w/o doing anything", {
 		auto itno = base.begin();
@@ -352,4 +352,33 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 		});
 	});
+	/*
+	DESCRIBE("Memory Leak", {
+		BEFORE_ALL({
+			cout << "CHECK " << aaa << " " << bbb << endl;
+			int a;
+			cin >> a;
+			for(int i=0;i<1000000;i++){
+				base.insert(make_pair(i, "test"));
+			}
+		});
+		
+		IT("MEMORY CHECK", {
+			TEST_SUCCEED();
+			int a;
+			cout << "CHECK " << aaa << " " << bbb << endl;
+			cin >> a;
+		});
+		
+		AFTER_ALL({
+			for(int i=0;i<1000000;i++){
+				base.erase(i);
+			}
+			
+			
+			int a;
+			cout << "CHECK " << aaa << " " << bbb << endl;
+			cin >> a;
+		});
+	});*/
 });

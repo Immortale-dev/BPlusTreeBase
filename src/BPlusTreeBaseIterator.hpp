@@ -4,6 +4,7 @@
 
 #include "BPlusTreeBaseNode.hpp"
 #include <utility>
+#include <memory>
 
 
 template < class Key, class T > class BPlusTreeBase;
@@ -14,6 +15,7 @@ class BPlusTreeBaseIterator
 	public:
 		typedef std::pair<const Key, T> entry_item;
 		typedef BPlusTreeBaseNode<Key, T> Node;
+		typedef std::shared_ptr<Node> node_ptr;
 		typedef BPlusTreeBaseIterator<Key, T> self_type;
 		typedef entry_item value_type;
 		typedef entry_item& reference;
@@ -36,13 +38,13 @@ class BPlusTreeBaseIterator
 		BPlusTreeBaseIterator(const self_type& iter) = default;
 		BPlusTreeBaseIterator(self_type&& iter);
 		self_type& operator=(self_type&& iter);
-        BPlusTreeBaseIterator(Node* node, childs_type_iterator it, instance_type* base);
+        BPlusTreeBaseIterator(node_ptr node, childs_type_iterator it, instance_type* base);
         virtual ~BPlusTreeBaseIterator();
         Key get_key();
         T get_value();
         
     protected:
-        Node* node;
+        node_ptr node;
         childs_type_iterator item;
         instance_type* base;
 };
@@ -74,7 +76,7 @@ BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator()
 }
 
 template <class Key, class T>
-BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(Node* node, childs_type_iterator it, instance_type* base)
+BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(node_ptr node, childs_type_iterator it, instance_type* base)
 {
     this->node = node;
     this->base = base;

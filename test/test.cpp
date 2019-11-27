@@ -2,5 +2,6 @@
 
 #include "bplustreebase.test.cpp"
 
+#include <iostream>
 
-int main(){ return 0; }
+int main(){ /*int a; std::cin >> a;*/ return 0; }
