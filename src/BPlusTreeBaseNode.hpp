@@ -19,7 +19,8 @@ class BPlusTreeBaseNode
 	typedef typename nodes_type::iterator nodes_type_iterator;
 	typedef typename keys_type::iterator keys_type_iterator;
 	typedef std::pair<const Key,T> child_item_type;
-	typedef std::vector<child_item_type*> child_type;
+	typedef std::shared_ptr<child_item_type> child_item_type_ptr;
+	typedef std::vector<child_item_type_ptr> child_type;
 	
 	public:
 		typedef typename child_type::iterator childs_type_iterator;
@@ -55,7 +56,7 @@ class BPlusTreeBaseNode
         virtual nodes_type* get_nodes() { return nullptr; };
         virtual child_type* get_childs() { return nullptr; };
         virtual int get_index(Node* node) { return 0; };
-        virtual int get_index(child_item_type* node) { return 0; };
+        virtual int get_index(child_item_type_ptr node) { return 0; };
         virtual node_ptr first_child_node() { return nullptr; };
         virtual node_ptr last_child_node() { return nullptr; };
         virtual node_ptr find(const Key& key) { return nullptr; };
@@ -63,23 +64,23 @@ class BPlusTreeBaseNode
         virtual node_ptr find_prev(const Key& key) { return nullptr; };
         virtual keys_type_iterator keys_iterator() { return {}; };
         virtual nodes_type_iterator nodes_iterator() { return {}; };
-        virtual void release_node(child_item_type* node) {};
-        virtual void insert(child_item_type* item) {};
+        virtual void release_node(child_item_type_ptr node) {};
+        virtual void insert(child_item_type_ptr item) {};
         virtual void insert(int index, childs_type_iterator s, childs_type_iterator e) {};
-        virtual child_item_type* erase(int index) { return nullptr; };
+        virtual child_item_type_ptr erase(int index) { return nullptr; };
         virtual void erase(childs_type_iterator s, childs_type_iterator e) {};
         virtual bool exists(const Key& key) { return 0; };
-        virtual child_item_type* get(int index) { return nullptr; };
-        virtual child_item_type* first_child() { return nullptr; };
-        virtual child_item_type* last_child() { return nullptr; };
+        virtual child_item_type_ptr get(int index) { return nullptr; };
+        virtual child_item_type_ptr first_child() { return nullptr; };
+        virtual child_item_type_ptr last_child() { return nullptr; };
         virtual void set_next_leaf(node_ptr node) {};
         virtual void set_prev_leaf(node_ptr node) {};
-        virtual const Key get_key(child_item_type* item) { return 0; };
+        virtual const Key get_key(child_item_type_ptr item) { return 0; };
         virtual node_ptr next_leaf() { return nullptr; };
         virtual node_ptr prev_leaf() { return nullptr; };
         virtual childs_type_iterator childs_iterator() { return {}; };
         
-        void* data = nullptr;
+        std::shared_ptr<void> data = nullptr;
         std::mutex mtx;
 };
 

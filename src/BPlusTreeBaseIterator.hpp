@@ -19,7 +19,7 @@ class BPlusTreeBaseIterator
 		typedef BPlusTreeBaseIterator<Key, T> self_type;
 		typedef entry_item value_type;
 		typedef entry_item& reference;
-		typedef entry_item* pointer;
+		typedef std::shared_ptr<entry_item> pointer;
 		typedef std::bidirectional_iterator_tag iterator_category;
 		typedef int difference_type;
 		typedef BPlusTreeBase<Key, T> instance_type;
@@ -105,19 +105,37 @@ template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator++()
 {	
 	if(!node){
-		node = base->min_node();
-		item = node->childs_iterator();
-		if(!node->size()){
+		node_ptr tmp = base->min_node();
+		
+		// Process search start
+		base->processSearchNodeStart(tmp);
+		
+		item = tmp->childs_iterator();
+		if(!tmp->size()){
 			node = nullptr;
 		}
+		else{
+			node = tmp;
+		}
+		
+		// Process search end
+		base->processSearchNodeEnd(tmp);
+		
 		return *this;
 	}
 	++item;
 	if(node->childs_iterator()+node->size() == item){
 		node = node->next_leaf();
+		
 		if(node){
+			// Process search start
+			base->processSearchNodeStart(node);
+			
 			item = node->childs_iterator();
-		}
+			
+			// Process search end
+			base->processSearchNodeEnd(node);
+		}		
 	}
 	return *this;
 }
@@ -127,18 +145,36 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 {
 	self_type n = *this;
 	if(!node){
-		node = base->min_node();
-		item = node->childs_iterator();
-		if(!node->size()){
+		node_ptr tmp = base->min_node();
+		
+		// Process search start
+		base->processSearchNodeStart(tmp);
+		
+		item = tmp->childs_iterator();
+		if(!tmp->size()){
 			node = nullptr;
 		}
+		else{
+			node = tmp;
+		}
+		
+		// Process search end
+		base->processSearchNodeEnd(tmp);
+		
 		return n;
 	}
 	++item;
 	if(node->childs_iterator()+node->size() == item){
 		node = node->next_leaf();
+		
 		if(node){
+			// Process search start
+			base->processSearchNodeStart(node);
+		
 			item = node->childs_iterator();
+			
+			// Process search end
+			base->processSearchNodeEnd(node);
 		}
 	}
 	return n;
@@ -148,18 +184,36 @@ template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator--()
 {
 	if(!node){
-		node = base->max_node();
-		item = node->childs_iterator()+(node->size()-1);
-		if(!node->size()){
+		node_ptr tmp = base->max_node();
+		
+		// Process search start
+		base->processSearchNodeStart(tmp);
+		
+		item = tmp->childs_iterator()+(tmp->size()-1);
+		if(!tmp->size()){
 			node = nullptr;
 		}
+		else{
+			node = tmp;
+		}
+		
+		// Process search end
+		base->processSearchNodeEnd(tmp);
+		
 		return *this;
 	}
 	--item;
 	if(node->childs_iterator()+node->size() == item){
 		node = node->prev_leaf();
+		
 		if(node){
+			// Process search start
+			base->processSearchNodeStart(node);
+			
 			item = node->childs_iterator()+(node->size()-1);
+			
+			// Process search end
+			base->processSearchNodeEnd(node);
 		}
 	}
 	return *this;
@@ -170,18 +224,36 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 {
 	self_type n = *this;
 	if(!node){
-		node = base->max_node();
-		item = node->childs_iterator()+(node->size()-1);
-		if(!node->size()){
+		node_ptr tmp = base->max_node();
+		
+		// Process search start
+		base->processSearchNodeStart(tmp);
+		
+		item = tmp->childs_iterator()+(tmp->size()-1);
+		if(!tmp->size()){
 			node = nullptr;
 		}
+		else{
+			node = tmp;
+		}
+		
+		// Process search end
+		base->processSearchNodeEnd(tmp);
+		
 		return n;
 	}
 	--item;
 	if(node->childs_iterator()+node->size() == item){
 		node = node->prev_leaf();
+		
 		if(node){
+			// Process search start
+			base->processSearchNodeStart(node);
+		
 			item = node->childs_iterator()+(node->size()-1);
+			
+			// Process search end
+			base->processSearchNodeEnd(node);
 		}
 	}
 	return n;

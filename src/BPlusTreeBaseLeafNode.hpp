@@ -6,7 +6,6 @@
 #include <map>
 #include <memory>
 
-//int bbb = 0;
 
 template<class Key, class T>
 class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
@@ -15,28 +14,29 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
     typedef std::shared_ptr<Node> node_ptr;
     typedef BPlusTreeBaseLeafNode<Key, T> LeafNode;
     typedef std::pair<const Key,T> child_item_type;
-    typedef std::vector<child_item_type*> child_type;
+    typedef std::shared_ptr<child_item_type> child_item_type_ptr;
+    typedef std::vector<child_item_type_ptr> child_type;
     typedef typename child_type::iterator childs_type_iterator;
 
     public:
         BPlusTreeBaseLeafNode();
         BPlusTreeBaseLeafNode(child_type* ch);
         ~BPlusTreeBaseLeafNode();
-        void release_node(child_item_type* node);
+        void release_node(child_item_type_ptr node);
         void set_childs(child_type* ch);
         child_type* get_childs();
-        void insert(child_item_type* item);
+        void insert(child_item_type_ptr item);
         void insert(int index, childs_type_iterator s, childs_type_iterator e);
-        child_item_type* erase(int index);
+        child_item_type_ptr erase(int index);
         void erase(childs_type_iterator s, childs_type_iterator e);
         inline bool is_leaf();
         bool exists(const Key& key);
         int get_index(const Key& key);
-        int get_index(child_item_type* node);
+        int get_index(child_item_type_ptr node);
         int size();
-        child_item_type* get(int index);
-        child_item_type* first_child();
-        child_item_type* last_child();
+        child_item_type_ptr get(int index);
+        child_item_type_ptr first_child();
+        child_item_type_ptr last_child();
         Key split(node_ptr node);
         void shift_left(node_ptr parent);
         void shift_right(node_ptr parent);
@@ -44,7 +44,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         void join_right(node_ptr parent);
         void set_next_leaf(node_ptr node);
         void set_prev_leaf(node_ptr node);
-        const Key get_key(child_item_type* item);
+        const Key get_key(child_item_type_ptr item);
         node_ptr next_leaf();
         node_ptr prev_leaf();
         childs_type_iterator childs_iterator();
@@ -60,7 +60,6 @@ template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::BPlusTreeBaseLeafNode()
 {
 	childs = new child_type();
-	//bbb++;
 }
 
 template<class Key, class T>
@@ -78,7 +77,6 @@ typename BPlusTreeBaseLeafNode<Key, T>::child_type* BPlusTreeBaseLeafNode<Key, T
 template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::~BPlusTreeBaseLeafNode()
 {
-	//bbb--;
     for(int i=0;i<size();i++){
         release_node((*childs)[i]);
 	}
@@ -88,10 +86,11 @@ BPlusTreeBaseLeafNode<Key, T>::~BPlusTreeBaseLeafNode()
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::release_node(child_item_type* node)
+void BPlusTreeBaseLeafNode<Key, T>::release_node(child_item_type_ptr node)
 {
     // TODO: replace with allocator methods
-    delete node;
+    // No need to delete shared ptr
+    // delete node;
 }
 
 template<class Key, class T>
@@ -107,12 +106,12 @@ inline bool BPlusTreeBaseLeafNode<Key, T>::is_leaf()
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseLeafNode<Key, T>::child_item_type* BPlusTreeBaseLeafNode<Key, T>::erase(int ind)
+typename BPlusTreeBaseLeafNode<Key, T>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T>::erase(int ind)
 {
     if(ind < 0){
         return nullptr;
 	}
-	child_item_type* deleted = (*childs)[ind];
+	child_item_type_ptr deleted = (*childs)[ind];
     childs->erase(childs->begin()+ind);
     return deleted;
 }
@@ -130,7 +129,7 @@ void BPlusTreeBaseLeafNode<Key, T>::insert(int index, childs_type_iterator s, ch
 }
 
 template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::insert(child_item_type* item)
+void BPlusTreeBaseLeafNode<Key, T>::insert(child_item_type_ptr item)
 {
     int res = get_index(get_key(item));
     childs->insert(childs->begin()+res, item);
@@ -144,7 +143,7 @@ bool BPlusTreeBaseLeafNode<Key, T>::exists(const Key& key)
 }
 
 template<class Key, class T>
-int BPlusTreeBaseLeafNode<Key, T>::get_index(child_item_type* node)
+int BPlusTreeBaseLeafNode<Key, T>::get_index(child_item_type_ptr node)
 {
     return get_index(get_key(node));
 }
@@ -177,19 +176,19 @@ int BPlusTreeBaseLeafNode<Key, T>::get_index(const Key& key)
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseLeafNode<Key, T>::child_item_type* BPlusTreeBaseLeafNode<Key, T>::get(int index)
+typename BPlusTreeBaseLeafNode<Key, T>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T>::get(int index)
 {
     return (*childs)[index];
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseLeafNode<Key, T>::child_item_type* BPlusTreeBaseLeafNode<Key, T>::first_child()
+typename BPlusTreeBaseLeafNode<Key, T>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T>::first_child()
 {
     return get(0);
 }
 
 template<class Key, class T>
-typename BPlusTreeBaseLeafNode<Key, T>::child_item_type* BPlusTreeBaseLeafNode<Key, T>::last_child()
+typename BPlusTreeBaseLeafNode<Key, T>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T>::last_child()
 {
     return get(size()-1);
 }
@@ -275,7 +274,7 @@ void BPlusTreeBaseLeafNode<Key, T>::set_prev_leaf(node_ptr node)
 }
 
 template<class Key, class T>
-const Key BPlusTreeBaseLeafNode<Key, T>::get_key(child_item_type* item)
+const Key BPlusTreeBaseLeafNode<Key, T>::get_key(child_item_type_ptr item)
 {
     return item->first;
 }

@@ -352,10 +352,10 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			INFO_PRINT("Mutex: "+to_string(base.mutex_count));
 		});
 	});
-	/*
-	DESCRIBE("Memory Leak", {
+	
+	DESCRIBE_SKIP("Memory Leak", {
 		BEFORE_ALL({
-			cout << "CHECK " << aaa << " " << bbb << endl;
+			cout << "CHECK " << endl;// << aaa << " " << bbb << endl;
 			int a;
 			cin >> a;
 			for(int i=0;i<1000000;i++){
@@ -366,7 +366,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 		IT("MEMORY CHECK", {
 			TEST_SUCCEED();
 			int a;
-			cout << "CHECK " << aaa << " " << bbb << endl;
+			cout << "CHECK " << endl;// << aaa << " " << bbb << endl;
 			cin >> a;
 		});
 		
@@ -377,8 +377,8 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			
 			
 			int a;
-			cout << "CHECK " << aaa << " " << bbb << endl;
+			cout << "CHECK " << endl;// << aaa << " " << bbb << endl;
 			cin >> a;
 		});
-	});*/
+	});
 });
