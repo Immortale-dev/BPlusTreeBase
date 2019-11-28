@@ -78,9 +78,15 @@ BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator()
 template <class Key, class T>
 BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(node_ptr node, childs_type_iterator it, instance_type* base)
 {
+	if(this->node){
+		base->processIteratorNodeReleased(node);
+	}
     this->node = node;
     this->base = base;
     this->item = it;
+    if(this->node){
+		base->processIteratorNodeReserved(node);
+	}
 }
 
 template <class Key, class T>
@@ -92,7 +98,9 @@ Key BPlusTreeBaseIterator<Key, T>::get_key()
 template <class Key, class T>
 BPlusTreeBaseIterator<Key, T>::~BPlusTreeBaseIterator()
 {
-
+	if(this->node){
+		base->processIteratorNodeReleased(node);
+	}
 }
 
 template <class Key, class T>
@@ -116,6 +124,9 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		}
 		else{
 			node = tmp;
+			
+			// Process reserve iterator node
+			base->processIteratorNodeReserved(node);
 		}
 		
 		// Process search end
@@ -125,9 +136,17 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 	}
 	++item;
 	if(node->childs_iterator()+node->size() == item){
+		
+		// Process release iterator node
+		base->processIteratorNodeReleased(node);
+		
 		node = node->next_leaf();
 		
 		if(node){
+			
+			// Process reserve iterator node
+			base->processIteratorNodeReserved(node);
+			
 			// Process search start
 			base->processSearchNodeStart(node);
 			
@@ -156,6 +175,9 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		}
 		else{
 			node = tmp;
+			
+			// Process reserve iterator node
+			base->processIteratorNodeReserved(node);
 		}
 		
 		// Process search end
@@ -165,9 +187,17 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 	}
 	++item;
 	if(node->childs_iterator()+node->size() == item){
+		
+		// Process release iterator node
+		base->processIteratorNodeReleased(node);
+		
 		node = node->next_leaf();
 		
 		if(node){
+			
+			// Process reserve iterator node
+			base->processIteratorNodeReserved(node);
+			
 			// Process search start
 			base->processSearchNodeStart(node);
 		
@@ -195,6 +225,9 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		}
 		else{
 			node = tmp;
+			
+			// Process reserve iterator node
+			base->processIteratorNodeReserved(node);
 		}
 		
 		// Process search end
@@ -204,9 +237,17 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 	}
 	--item;
 	if(node->childs_iterator()+node->size() == item){
+		
+		// Process release iterator node
+		base->processIteratorNodeReleased(node);
+		
 		node = node->prev_leaf();
 		
 		if(node){
+			
+			// Process reserve iterator node
+			base->processIteratorNodeReserved(node);
+			
 			// Process search start
 			base->processSearchNodeStart(node);
 			
@@ -235,6 +276,9 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		}
 		else{
 			node = tmp;
+			
+			// Process reserve iterator node
+			base->processIteratorNodeReserved(node);
 		}
 		
 		// Process search end
@@ -244,9 +288,17 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 	}
 	--item;
 	if(node->childs_iterator()+node->size() == item){
+		
+		// Process release iterator node
+		base->processIteratorNodeReleased(node);
+		
 		node = node->prev_leaf();
 		
 		if(node){
+			
+			// Process reserve iterator node
+			base->processIteratorNodeReserved(node);
+			
 			// Process search start
 			base->processSearchNodeStart(node);
 		

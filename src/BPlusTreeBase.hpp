@@ -65,6 +65,8 @@ class BPlusTreeBase
         virtual void processSearchNodeEnd(node_ptr node);
         virtual void processInsertNode(node_ptr node);
         virtual void processDeleteNode(node_ptr node);
+        virtual void processIteratorNodeReserved(node_ptr node);
+        virtual void processIteratorNodeReleased(node_ptr node);
         void release_entry_item(EntryItem_ptr item);
         EntryItem_ptr create_entry_item(Key key, T val);
         long v_count;
@@ -308,6 +310,18 @@ void BPlusTreeBase<Key, T>::processInsertNode(node_ptr node)
 
 template<class Key, class T>
 void BPlusTreeBase<Key, T>::processDeleteNode(node_ptr node)
+{
+    return;
+}
+
+template<class Key, class T>
+void BPlusTreeBase<Key, T>::processIteratorNodeReserved(node_ptr node)
+{
+    return;
+}
+
+template<class Key, class T>
+void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr node)
 {
     return;
 }
