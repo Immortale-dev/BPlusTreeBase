@@ -14,9 +14,6 @@ using namespace std;
 
 DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 	
-	//auto* baseT = new BPlusTreeBase<int,string>(3);
-	//auto& base = *baseT;
-	
 	auto base = BPlusTreeBase<int,string>(3);
 		
 	DESCRIBE("w/o doing anything", {
@@ -92,7 +89,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			});
 		});
 		
-		DESCRIBE("Add more items", {
+		DESCRIBE_ONLY("Add more items", {
 			int cc = 5;
 			
 			BEFORE_ALL({
@@ -116,19 +113,23 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			IT("Expect base.size to be equal `cc`", {
 				EXPECT(base.size()).toBe(cc);
 				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
+				INFO_PRINT("Reserved: "+to_string(base.reserved_count));
 			});
 
 			IT("Value of item with `key` 15 to be `wtf`", {
 				EXPECT(base.find(15).get_value()).toBe("wtf");
 				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
+				INFO_PRINT("Reserved: "+to_string(base.reserved_count));
 			});
 			
 			IT("Value of item with `key` 145 to be wtfi145", {
 				EXPECT(base.find(145).get_value()).toBe("wtfi145");
 				INFO_PRINT("Mutex: "+to_string(base.mutex_count));
+				INFO_PRINT("Reserved: "+to_string(base.reserved_count));
 			});
 			
 			DESCRIBE("Remove item with `key` 125", {
+				cout << "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB: " << base.reserved_count << endl;
 				BEFORE_ALL({
 					base.erase(125);
 					cc--;
@@ -137,6 +138,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				IT("base.size() should be as expected", {
 					EXPECT(base.size()).toBe(cc);
 					INFO_PRINT("Mutex: "+to_string(base.mutex_count));
+					INFO_PRINT("Reserved: "+to_string(base.reserved_count));
 				});
 			});
 			
@@ -353,7 +355,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 		});
 	});
 	
-	DESCRIBE_SKIP("Memory Leak", {
+	DESCRIBE_SKIP("Add 1000000 items", {
 		BEFORE_ALL({
 			cout << "CHECK " << endl;// << aaa << " " << bbb << endl;
 			int a;
@@ -363,7 +365,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			}
 		});
 		
-		IT("MEMORY CHECK", {
+		IT("MEMORY CHECK CHECK", {
 			TEST_SUCCEED();
 			int a;
 			cout << "CHECK " << endl;// << aaa << " " << bbb << endl;
@@ -379,6 +381,35 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			int a;
 			cout << "CHECK " << endl;// << aaa << " " << bbb << endl;
 			cin >> a;
+		});
+	});
+	
+	DESCRIBE("Reserved/released nodes", {
+		BEFORE_ALL({
+			for(int i=0;i<1000;i++){
+				base.insert(make_pair(i, "test"));
+			}
+		});
+		
+		DESCRIBE("Move through all of the items", {
+			
+			BEFORE_ALL({
+				auto it = base.begin();
+				while(it != base.end()){
+					++it;
+				}
+			});
+			
+			IT("`reserved_count` should be equal to 0", {
+				EXPECT(base.reserved_count).toBe(0);
+				INFO_PRINT("reserved_count: "+to_string(base.reserved_count));
+			});
+		});
+		
+		AFTER_ALL({
+			for(int i=0;i<1000;i++){
+				base.erase(i);
+			}
 		});
 	});
 });

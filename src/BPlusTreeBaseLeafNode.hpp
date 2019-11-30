@@ -34,6 +34,9 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         int get_index(const Key& key);
         int get_index(child_item_type_ptr node);
         int size();
+        int childs_size();
+        void set_size(int sz);
+        void update_size();
         child_item_type_ptr get(int index);
         child_item_type_ptr first_child();
         child_item_type_ptr last_child();
@@ -48,11 +51,13 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         node_ptr next_leaf();
         node_ptr prev_leaf();
         childs_type_iterator childs_iterator();
+        childs_type_iterator childs_iterator_end();
 
     protected:
         child_type* childs;
         node_ptr next_leaf_node = nullptr;
         node_ptr prev_leaf_node = nullptr;
+        int _size = 0;
 };
 
 
@@ -77,7 +82,7 @@ typename BPlusTreeBaseLeafNode<Key, T>::child_type* BPlusTreeBaseLeafNode<Key, T
 template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::~BPlusTreeBaseLeafNode()
 {
-    for(int i=0;i<size();i++){
+    for(int i=0;i<childs_size();i++){
         release_node((*childs)[i]);
 	}
 	if(childs){
@@ -139,7 +144,7 @@ template<class Key, class T>
 bool BPlusTreeBaseLeafNode<Key, T>::exists(const Key& key)
 {
     int index = get_index(key);
-    return index < size() && get_key((*childs)[index]) == key;
+    return index < childs_size() && get_key((*childs)[index]) == key;
 }
 
 template<class Key, class T>
@@ -151,16 +156,36 @@ int BPlusTreeBaseLeafNode<Key, T>::get_index(child_item_type_ptr node)
 template<class Key, class T>
 int BPlusTreeBaseLeafNode<Key, T>::size()
 {
-	if(!childs)
-		return 0;
-    return childs->size();
+	return _size;
+	
+	//if(!childs)
+	//	return 0;
+    //return childs->size();
+}
+
+template<class Key, class T>
+BPlusTreeBaseLeafNode<Key, T>::childs_size()
+{
+	return childs->size();
+}
+
+template<class Key, class T>
+void BPlusTreeBaseLeafNode<Key, T>::set_size(int sz)
+{
+	_size = sz;
+}
+
+template<class Key, class T>
+void BPlusTreeBaseLeafNode<Key, T>::update_size()
+{
+	set_size(childs_size());
 }
 
 template<class Key, class T>
 int BPlusTreeBaseLeafNode<Key, T>::get_index(const Key& key)
 {
-    int mn=0,mx=size()-1,md;
-    int res = size();
+    int mn=0,mx=childs_size()-1,md;
+    int res = childs_size();
     while(mn<=mx){
         md = (mn+mx)/2;
         const Key& k = get_key((*childs)[md]);
@@ -190,14 +215,14 @@ typename BPlusTreeBaseLeafNode<Key, T>::child_item_type_ptr BPlusTreeBaseLeafNod
 template<class Key, class T>
 typename BPlusTreeBaseLeafNode<Key, T>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T>::last_child()
 {
-    return get(size()-1);
+    return get(childs_size()-1);
 }
 
 template<class Key, class T>
 Key BPlusTreeBaseLeafNode<Key, T>::split(node_ptr node)
 {
-    childs_type_iterator c_start = childs_iterator()+size()/2;
-    childs_type_iterator c_end = childs_iterator()+size();
+    childs_type_iterator c_start = childs_iterator()+childs_size()/2;
+    childs_type_iterator c_end = childs_iterator_end();
     node->insert(0, c_start, c_end);
     erase(c_start, c_end);
     return get_key(node->first_child());
@@ -212,7 +237,7 @@ void BPlusTreeBaseLeafNode<Key, T>::shift_left(node_ptr parent)
     node_ptr prev = parent->get_node(index);
     // Shift item
     insert(prev->last_child());
-    prev->erase(prev->size()-1);
+    prev->erase(prev->childs_size()-1);
     // Update key between shifted nodes
     *(parent->keys_iterator()+index) = get_key(first_child());
 }
@@ -239,8 +264,8 @@ void BPlusTreeBaseLeafNode<Key, T>::join_left(node_ptr parent)
     // Get join node
     node_ptr prev = parent->get_node(index);
     // Move all items from join node
-    insert(0, prev->childs_iterator(), prev->childs_iterator()+prev->size());
-    prev->erase(prev->childs_iterator(), prev->childs_iterator()+prev->size());
+    insert(0, prev->childs_iterator(), prev->childs_iterator_end());
+    prev->erase(prev->childs_iterator(), prev->childs_iterator_end());
     // Remove from parent
     parent->remove_keys(index);
     parent->remove_nodes(index);
@@ -254,8 +279,8 @@ void BPlusTreeBaseLeafNode<Key, T>::join_right(node_ptr parent)
     // Get join node
     node_ptr next = parent->get_node(index);
     // Move all items from join node
-    insert(size(), next->childs_iterator(), next->childs_iterator()+next->size());
-    next->erase(next->childs_iterator(), next->childs_iterator()+next->size());
+    insert(childs_size(), next->childs_iterator(), next->childs_iterator_end());
+    next->erase(next->childs_iterator(), next->childs_iterator_end());
     // Remove from parent
     parent->remove_keys(index-1);
     parent->remove_nodes(index);
@@ -295,6 +320,12 @@ template<class Key, class T>
 typename BPlusTreeBaseLeafNode<Key, T>::childs_type_iterator BPlusTreeBaseLeafNode<Key, T>::childs_iterator()
 {
     return childs->begin();
+}
+
+template<class Key, class T>
+typename BPlusTreeBaseLeafNode<Key, T>::childs_type_iterator BPlusTreeBaseLeafNode<Key, T>::childs_iterator_end()
+{
+    return childs->end();
 }
 
 

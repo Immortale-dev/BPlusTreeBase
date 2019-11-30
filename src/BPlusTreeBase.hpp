@@ -38,6 +38,7 @@ class BPlusTreeBase
     // DEBUG METHODS
 	#ifdef DEBUG
 		int mutex_count = 0;
+		int reserved_count = 0;
 		void print_tree();
 		void print_tree(node_ptr node, std::string tabs);
 		std::vector<Key> bfs_result();
@@ -317,12 +318,18 @@ void BPlusTreeBase<Key, T>::processDeleteNode(node_ptr node)
 template<class Key, class T>
 void BPlusTreeBase<Key, T>::processIteratorNodeReserved(node_ptr node)
 {
+	#ifdef DEBUG
+		reserved_count++;
+	#endif
     return;
 }
 
 template<class Key, class T>
 void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr node)
 {
+	#ifdef DEBUG
+		reserved_count--;
+	#endif
     return;
 }
 
@@ -355,6 +362,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 			return false;
 		}
         release_entry_item(node->erase(node->get_index(key)));
+        node->update_size();
         v_count--;
         nodeChanged = true;
     }
@@ -379,6 +387,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 
             // Clear node memory
             node->remove_nodes(0);
+            node->update_size();
             release_node(node);
 
 			// Parent Node was not changed
@@ -406,6 +415,10 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 
         // Shift nodes
         node->shift_left(parent);
+        
+        // Update size of nodes
+        node->update_size();
+        nodeLeft->update_size();
 
         // Process updated node
         processInsertNode(nodeLeft);
@@ -426,6 +439,10 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 
         // Shift nodes
         node->shift_right(parent);
+        
+        // Update size of nodes
+        node->update_size();
+        nodeRight->update_size();
 
         // Process updated node
         processInsertNode(nodeRight);
@@ -449,6 +466,10 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
         node->join_left(parent);
         node->set_prev_leaf(joinNode->prev_leaf());
     }
+    
+    // Update size of nodes
+    node->update_size();
+    parent->update_size();
 
     // Delete useless node
     processDeleteNode(joinNode);
@@ -479,6 +500,7 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         if(!node->exists(key)){
             v_count++;
             node->insert(item);
+            node->update_size();
             nodeChanged = true;
         }
     }
@@ -498,6 +520,10 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         
         // Split node to nnode
         Key ins_key = node->split(nnode);
+        
+        // Update size of noeds
+        node->update_size();
+        nnode->update_size();
         
         // Update inserted node ref if necessary
         if(is_leaf(node) && !node->exists(key)){
@@ -530,6 +556,7 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
             parent->add_keys(0, ins_key);
             parent->add_nodes(0, node);
             parent->add_nodes(1, nnode);
+            parent->update_size();
             set_root(parent);
             // Process updated Node
             processInsertNode(parent);
@@ -544,6 +571,7 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
             // Add items to parent node
             parent->add_keys(index, ins_key);
             parent->add_nodes(index+1, nnode);
+            parent->update_size();
         }
     }
 

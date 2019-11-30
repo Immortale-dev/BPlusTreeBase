@@ -33,6 +33,8 @@ class BPlusTreeBaseNode
         virtual void shift_right(node_ptr parent) = 0;
         virtual void join_left(node_ptr parent) = 0;
         virtual void join_right(node_ptr parent) = 0;
+        virtual void set_size(int sz) = 0;
+        virtual void update_size() = 0;
         virtual Key split(node_ptr node) = 0;
         virtual int get_index(const Key& key) = 0;
         
@@ -52,6 +54,9 @@ class BPlusTreeBaseNode
         virtual void set_keys(keys_type* keys) {};
         virtual void set_nodes(nodes_type* nodes) {};
         virtual void set_childs(child_type* ch) {};
+        virtual int keys_size() { return 0; };
+        virtual int nodes_size() { return 0; };
+        virtual int childs_size() { return 0; };
         virtual keys_type* get_keys() { return nullptr; };
         virtual nodes_type* get_nodes() { return nullptr; };
         virtual child_type* get_childs() { return nullptr; };
@@ -64,6 +69,10 @@ class BPlusTreeBaseNode
         virtual node_ptr find_prev(const Key& key) { return nullptr; };
         virtual keys_type_iterator keys_iterator() { return {}; };
         virtual nodes_type_iterator nodes_iterator() { return {}; };
+        virtual childs_type_iterator childs_iterator() { return {}; };
+        virtual keys_type_iterator keys_iterator_end() { return {}; };
+        virtual nodes_type_iterator nodes_iterator_end() { return {}; };
+        virtual childs_type_iterator childs_iterator_end() { return {}; };
         virtual void release_node(child_item_type_ptr node) {};
         virtual void insert(child_item_type_ptr item) {};
         virtual void insert(int index, childs_type_iterator s, childs_type_iterator e) {};
@@ -78,7 +87,6 @@ class BPlusTreeBaseNode
         virtual const Key get_key(child_item_type_ptr item) { return 0; };
         virtual node_ptr next_leaf() { return nullptr; };
         virtual node_ptr prev_leaf() { return nullptr; };
-        virtual childs_type_iterator childs_iterator() { return {}; };
         
         std::shared_ptr<void> data = nullptr;
         std::mutex mtx;

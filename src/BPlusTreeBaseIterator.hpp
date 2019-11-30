@@ -35,7 +35,8 @@ class BPlusTreeBaseIterator
 		bool operator!=(const self_type &r);
 		
 		BPlusTreeBaseIterator();
-		BPlusTreeBaseIterator(const self_type& iter) = default;
+		BPlusTreeBaseIterator(const self_type& iter);
+		self_type& operator=(const self_type& iter);
 		BPlusTreeBaseIterator(self_type&& iter);
 		self_type& operator=(self_type&& iter);
         BPlusTreeBaseIterator(node_ptr node, childs_type_iterator it, instance_type* base);
@@ -51,6 +52,39 @@ class BPlusTreeBaseIterator
 
 
 template <class Key, class T>
+BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(const self_type& iter)
+{
+	this->item = iter.item;
+	this->node = iter.node;
+	this->base = iter.base;
+	
+	if(this->node){
+		// reserve node
+		base->processIteratorNodeReserved(node);
+	}
+}
+
+template <class Key, class T>
+typename BPlusTreeBaseIterator<Key, T>::self_type& BPlusTreeBaseIterator<Key, T>::operator=(const self_type& iter)
+{
+	if(this->node){
+		// release node
+		base->processIteratorNodeReleased(node);
+	}
+	
+	this->item = iter.item;
+	this->node = iter.node;
+	this->base = iter.base;
+	
+	if(this->node){
+		// reserve node
+		base->processIteratorNodeReserved(node);
+	}
+	
+	return *this;
+}
+
+template <class Key, class T>
 BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(self_type&& iter)
 {
 	this->item = std::move(iter.item);
@@ -61,6 +95,11 @@ BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(self_type&& iter)
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type& BPlusTreeBaseIterator<Key, T>::operator=(self_type&& iter)
 {
+	if(this->node){
+		// release node
+		base->processIteratorNodeReleased(this->node);
+	}
+	
 	this->item = std::move(iter.item);
 	this->node = std::move(iter.node);
 	this->base = std::move(iter.base);
@@ -78,13 +117,11 @@ BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator()
 template <class Key, class T>
 BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator(node_ptr node, childs_type_iterator it, instance_type* base)
 {
-	if(this->node){
-		base->processIteratorNodeReleased(node);
-	}
     this->node = node;
     this->base = base;
     this->item = it;
     if(this->node){
+		// reserve node
 		base->processIteratorNodeReserved(node);
 	}
 }
@@ -99,7 +136,7 @@ template <class Key, class T>
 BPlusTreeBaseIterator<Key, T>::~BPlusTreeBaseIterator()
 {
 	if(this->node){
-		base->processIteratorNodeReleased(node);
+		base->processIteratorNodeReleased(this->node);
 	}
 }
 
