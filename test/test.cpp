@@ -1,4 +1,4 @@
-
+//#define TEST_ONLY_RULE
 #include "qtest.hpp"
 
 #include "bplustreebase.test.cpp"

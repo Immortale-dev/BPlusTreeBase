@@ -149,6 +149,9 @@ T BPlusTreeBaseIterator<Key, T>::get_value()
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator++()
 {	
+	// Process Move Start
+	base->processIteratorMoveStart(*this, node, 1);
+	
 	if(!node){
 		node_ptr tmp = base->min_node();
 		
@@ -169,10 +172,12 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		// Process search end
 		base->processSearchNodeEnd(tmp);
 		
+		// Process Move End
+		base->processIteratorMoveEnd(*this, node, 1);
+		
 		return *this;
 	}
-	++item;
-	if(node->childs_iterator()+node->size() == item){
+	if(node->childs_iterator_end() == ++item){
 		
 		// Process release iterator node
 		base->processIteratorNodeReleased(node);
@@ -193,12 +198,19 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 			base->processSearchNodeEnd(node);
 		}		
 	}
+	
+	// Process Move End
+	base->processIteratorMoveEnd(*this, node, 1);
+	
 	return *this;
 }
 
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator++(int)
 {
+	// Process Move Start
+	base->processIteratorMoveStart(*this, node, 1);
+	
 	self_type n = *this;
 	if(!node){
 		node_ptr tmp = base->min_node();
@@ -220,10 +232,12 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		// Process search end
 		base->processSearchNodeEnd(tmp);
 		
+		// Process Move End
+		base->processIteratorMoveEnd(*this, node, 1);
+		
 		return n;
 	}
-	++item;
-	if(node->childs_iterator()+node->size() == item){
+	if(node->childs_iterator_end() == ++item){
 		
 		// Process release iterator node
 		base->processIteratorNodeReleased(node);
@@ -244,12 +258,19 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 			base->processSearchNodeEnd(node);
 		}
 	}
+	
+	// Process Move End
+	base->processIteratorMoveEnd(*this, node, 1);
+	
 	return n;
 }
 
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator--()
 {
+	// Process Move Start
+	base->processIteratorMoveStart(*this, node, -1);
+	
 	if(!node){
 		node_ptr tmp = base->max_node();
 		
@@ -270,10 +291,12 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		// Process search end
 		base->processSearchNodeEnd(tmp);
 		
+		// Process Move End
+		base->processIteratorMoveEnd(*this, node, -1);
+		
 		return *this;
 	}
-	--item;
-	if(node->childs_iterator()+node->size() == item){
+	if(node->childs_iterator() == item--){
 		
 		// Process release iterator node
 		base->processIteratorNodeReleased(node);
@@ -281,7 +304,6 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		node = node->prev_leaf();
 		
 		if(node){
-			
 			// Process reserve iterator node
 			base->processIteratorNodeReserved(node);
 			
@@ -294,12 +316,19 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 			base->processSearchNodeEnd(node);
 		}
 	}
+	
+	// Process Move Start
+	base->processIteratorMoveEnd(*this, node, -1);
+	
 	return *this;
 }
 
 template <class Key, class T>
 typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>::operator--(int)
 {
+	// Process Move Start
+	base->processIteratorMoveStart(*this, node, -1);
+	
 	self_type n = *this;
 	if(!node){
 		node_ptr tmp = base->max_node();
@@ -321,10 +350,12 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 		// Process search end
 		base->processSearchNodeEnd(tmp);
 		
+		// Process Move Start
+		base->processIteratorMoveEnd(*this, node, -1);
+		
 		return n;
 	}
-	--item;
-	if(node->childs_iterator()+node->size() == item){
+	if(node->childs_iterator() == item--){
 		
 		// Process release iterator node
 		base->processIteratorNodeReleased(node);
@@ -345,6 +376,10 @@ typename BPlusTreeBaseIterator<Key, T>::self_type BPlusTreeBaseIterator<Key, T>:
 			base->processSearchNodeEnd(node);
 		}
 	}
+	
+	// Process Move Start
+	base->processIteratorMoveEnd(*this, node, -1);
+	
 	return n;
 }
 
@@ -365,7 +400,7 @@ bool BPlusTreeBaseIterator<Key, T>::operator==(const self_type &r)
 {
 	if(!node && !r.node)
 		return base == r.base;
-	return (node == r.node && item == r.item);
+	return (node.get() == r.node.get() && item == r.item);
 }
 
 template <class Key, class T>
@@ -373,7 +408,7 @@ bool BPlusTreeBaseIterator<Key, T>::operator!=(const self_type &r)
 {
 	if(!node && !r.node)
 		return base != r.base;
-	return node != r.node || item != r.item;
+	return node.get() != r.node.get() || item != r.item;
 }
 
 

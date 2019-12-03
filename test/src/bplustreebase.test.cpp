@@ -27,15 +27,26 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			auto nxt = itno++;
 			EXPECT(nxt).toBe(itno2);
 		});
+		IT("prev to begin() should be equal end()", {
+			auto prv = base.begin();
+			EXPECT(--prv).toBe(itno2);
+		});
 	});
 	
 	DESCRIBE("Add 4 items", {
-		
 		BEFORE_ALL({
 			base.insert(make_pair(1,"wtf"));
 			base.insert(make_pair(5,"test"));
 			base.insert(make_pair(15,"wtf"));
 			base.insert(make_pair(16,"alola"));
+		});
+		
+		DESCRIBE("Check iterators", {
+			IT("third from begin() iterator should be equal to --end()", {
+				auto b = base.begin();
+				++b; ++b; ++b;
+				EXPECT(b).toBe(--base.end());
+			});
 		});
 		
 		DESCRIBE("Insert one more unique lvalue item to the tree", {
@@ -89,7 +100,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			});
 		});
 		
-		DESCRIBE_ONLY("Add more items", {
+		DESCRIBE("Add more items", {
 			int cc = 5;
 			
 			BEFORE_ALL({
@@ -129,7 +140,6 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			});
 			
 			DESCRIBE("Remove item with `key` 125", {
-				cout << "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB: " << base.reserved_count << endl;
 				BEFORE_ALL({
 					base.erase(125);
 					cc--;
@@ -376,33 +386,106 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			for(int i=0;i<1000000;i++){
 				base.erase(i);
 			}
-			
-			
 			int a;
 			cout << "CHECK " << endl;// << aaa << " " << bbb << endl;
 			cin >> a;
 		});
 	});
 	
-	DESCRIBE("Reserved/released nodes", {
+	DESCRIBE("Insert 1000 items", {
 		BEFORE_ALL({
 			for(int i=0;i<1000;i++){
 				base.insert(make_pair(i, "test"));
 			}
 		});
 		
-		DESCRIBE("Move through all of the items", {
+		DESCRIBE("Test iterator process hooks", {
 			
-			BEFORE_ALL({
-				auto it = base.begin();
-				while(it != base.end()){
-					++it;
-				}
+			DESCRIBE("Move through all of the items", {
+				BEFORE_ALL({
+					auto it = base.begin();
+					while(it != base.end()){
+						++it;
+					}
+				});
+				
+				IT("`reserved_count` should be equal to 0", {
+					EXPECT(base.reserved_count).toBe(0);
+					INFO_PRINT("reserved_count: "+to_string(base.reserved_count));
+				});
 			});
 			
-			IT("`reserved_count` should be equal to 0", {
-				EXPECT(base.reserved_count).toBe(0);
-				INFO_PRINT("reserved_count: "+to_string(base.reserved_count));
+			DESCRIBE("Move through all the items using ++iterator", {
+				
+				BEFORE_ALL({
+					auto it = base.begin();
+					while(it != base.end())
+						++it;
+				});
+				
+				IT("`iterator_move_count` should be equal to 0", {
+					EXPECT(base.iterator_move_count).toBe(0);
+					INFO_PRINT("iterator_move_count: " + to_string(base.iterator_move_count));
+				});
+			});
+			
+			DESCRIBE("Move through all the items using iterator++", {
+				
+				BEFORE_ALL({
+					auto it = base.begin();
+					while(it != base.end())
+						it++;
+				});
+				
+				IT("`iterator_move_count` should be equal to 0", {
+					EXPECT(base.iterator_move_count).toBe(0);
+					INFO_PRINT("iterator_move_count: " + to_string(base.iterator_move_count));
+				});
+			});
+			
+			DESCRIBE("Move through all the items using --iterator", {
+				
+				BEFORE_ALL({
+					auto it = base.end();
+					while(it != base.begin()){
+						--it;
+					}
+				});
+				
+				IT("`iterator_move_count` should be equal to 0", {
+					EXPECT(base.iterator_move_count).toBe(0);
+					INFO_PRINT("iterator_move_count: " + to_string(base.iterator_move_count));
+				});
+			});
+			
+			DESCRIBE("Move through all the items using iterator--", {
+				
+				BEFORE_ALL({
+					auto it = base.end();
+					while(it != base.begin()){
+						it--;
+					}
+				});
+				
+				IT("`iterator_move_count` should be equal to 0", {
+					EXPECT(base.iterator_move_count).toBe(0);
+					INFO_PRINT("iterator_move_count: " + to_string(base.iterator_move_count));
+				});
+			});
+			
+			DESCRIBE("Move through the some items", {
+				
+				BEFORE_ALL({
+					auto it = base.begin();
+					int num = 278;
+					while(num--)
+						it++;
+				});
+				
+				IT("`iterator_move_count` should be equal to 0", {
+					EXPECT(base.iterator_move_count).toBe(0);
+					INFO_PRINT("iterator_move_count: " + to_string(base.iterator_move_count));
+				});
 			});
 		});
 		
