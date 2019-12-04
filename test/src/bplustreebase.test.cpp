@@ -495,4 +495,21 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			}
 		});
 	});
+	
+	DESCRIBE("Add items from 100 to 1000 and remove from 900 to 10", {
+		BPlusTreeBase<int, int> tree(3);
+		
+		BEFORE_ALL({			
+			for(int i=100;i<1000;i++){
+				tree.insert(make_pair(i,i));
+			}
+			for(int i=900;i>=10;i--){
+				tree.erase(i);
+			}
+		});
+		
+		IT("tree size should be 99", {
+			EXPECT(tree.size()).toBe(99);
+		});
+	});
 });

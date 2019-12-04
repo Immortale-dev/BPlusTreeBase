@@ -35,8 +35,6 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         int get_index(child_item_type_ptr node);
         int size();
         int childs_size();
-        void set_size(int sz);
-        void update_size();
         child_item_type_ptr get(int index);
         child_item_type_ptr first_child();
         child_item_type_ptr last_child();
@@ -57,7 +55,6 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         child_type* childs;
         node_ptr next_leaf_node = nullptr;
         node_ptr prev_leaf_node = nullptr;
-        int _size = 0;
 };
 
 
@@ -156,29 +153,13 @@ int BPlusTreeBaseLeafNode<Key, T>::get_index(child_item_type_ptr node)
 template<class Key, class T>
 int BPlusTreeBaseLeafNode<Key, T>::size()
 {
-	return _size;
-	
-	//if(!childs)
-	//	return 0;
-    //return childs->size();
+	return childs_size();
 }
 
 template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::childs_size()
 {
 	return childs->size();
-}
-
-template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::set_size(int sz)
-{
-	_size = sz;
-}
-
-template<class Key, class T>
-void BPlusTreeBaseLeafNode<Key, T>::update_size()
-{
-	set_size(childs_size());
 }
 
 template<class Key, class T>

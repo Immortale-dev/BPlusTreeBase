@@ -218,7 +218,7 @@ typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key,T>::min_node(node_ptr 
 template<class Key, class T>
 bool BPlusTreeBase<Key,T>::is_root(node_ptr node)
 {
-    return root == node;
+    return root.get() == node.get();
 }
 
 template<class Key, class T>
@@ -388,12 +388,11 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 			return false;
 		}
         release_entry_item(node->erase(node->get_index(key)));
-        node->update_size();
         v_count--;
         nodeChanged = true;
-    }
+	}
     else{
-        nodeChanged = erase_req(node->find(key), node, key);
+		nodeChanged = erase_req(node->find(key), node, key);
     }
 
     if(node->size() >= factor || is_root(node)){
@@ -401,19 +400,27 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
         if(!is_leaf(node) && node->size() == 1){
 
             node_ptr child = node->first_child_node();
+            
+            // Process as this node will became as root
+            processSearchNodeStart(child);
 
             // Set new root
             set_root(child);
+            
+            // Save Child as root
+            processInsertNode(child);
+            
+            // Leave new root node
+            processSearchNodeEnd(child);
 
             // Delete old root node
+            node->remove_nodes(0);
             processDeleteNode(node);
-
+            
             // Process node after search
             processSearchNodeEnd(node);
-
+            
             // Clear node memory
-            node->remove_nodes(0);
-            node->update_size();
             release_node(node);
 
 			// Parent Node was not changed
@@ -434,17 +441,14 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     node_ptr nodeRight;
 
     nodeLeft = parent->find_prev(key);
+    if(nodeLeft){
+		// Start working with left node
+		processSearchNodeStart(nodeLeft);
+	}
     if(nodeLeft && nodeLeft->size() > factor){
-		
-        // Process Node before search
-        processSearchNodeStart(nodeLeft);
 
         // Shift nodes
         node->shift_left(parent);
-        
-        // Update size of nodes
-        node->update_size();
-        nodeLeft->update_size();
 
         // Process updated node
         processInsertNode(nodeLeft);
@@ -456,19 +460,21 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
         // Parent node changed
         return true;
     }
-
+    
     nodeRight = parent->find_next(key);
+	if(nodeRight){
+		// Start working with right node
+		processSearchNodeStart(nodeRight);
+	}
     if(nodeRight && nodeRight->size() > factor){
 		
-        // Process Node before search
-        processSearchNodeStart(nodeRight);
+		if(nodeLeft){
+			// process finish with leftNode
+			processSearchNodeEnd(nodeLeft);
+		}
 
         // Shift nodes
         node->shift_right(parent);
-        
-        // Update size of nodes
-        node->update_size();
-        nodeRight->update_size();
 
         // Process updated node
         processInsertNode(nodeRight);
@@ -482,30 +488,42 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     }
 
     node_ptr joinNode = nodeRight ? nodeRight : nodeLeft;
-    processSearchNodeStart(joinNode);
 
     if(nodeRight){
         node->join_right(parent);
-        node->set_next_leaf(joinNode->next_leaf());
+        if(is_leaf(node)){
+			node->set_next_leaf(joinNode->next_leaf());
+		}
     }
     else{
         node->join_left(parent);
-        node->set_prev_leaf(joinNode->prev_leaf());
+        if(is_leaf(node)){
+			node->set_prev_leaf(joinNode->prev_leaf());
+		}
     }
     
-    // Update size of nodes
-    node->update_size();
-    parent->update_size();
+    if(is_leaf(node)){
+		joinNode->set_next_leaf(nullptr);
+		joinNode->set_prev_leaf(nullptr);
+	}
 
     // Delete useless node
     processDeleteNode(joinNode);
     
-    processSearchNodeEnd(joinNode);
+    // Save node
+    processInsertNode(node);
+    
+    // End processing with side nodes
+	if(nodeLeft){
+		processSearchNodeEnd(nodeLeft);
+	}
+	if(nodeRight){
+		processSearchNodeEnd(nodeRight);
+	}
+	
     processSearchNodeEnd(node);
 
     // Clear node memory
-	joinNode->set_next_leaf(nullptr);
-    joinNode->set_prev_leaf(nullptr);
     release_node(joinNode);
 
     // Parent node changed
@@ -526,7 +544,6 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         if(!node->exists(key)){
             v_count++;
             node->insert(item);
-            node->update_size();
             nodeChanged = true;
         }
     }
@@ -546,10 +563,6 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         
         // Split node to nnode
         Key ins_key = node->split(nnode);
-        
-        // Update size of noeds
-        node->update_size();
-        nnode->update_size();
         
         // Update inserted node ref if necessary
         if(is_leaf(node) && !node->exists(key)){
@@ -582,7 +595,6 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
             parent->add_keys(0, ins_key);
             parent->add_nodes(0, node);
             parent->add_nodes(1, nnode);
-            parent->update_size();
             set_root(parent);
             // Process updated Node
             processInsertNode(parent);
@@ -597,7 +609,6 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
             // Add items to parent node
             parent->add_keys(index, ins_key);
             parent->add_nodes(index+1, nnode);
-            parent->update_size();
         }
     }
 

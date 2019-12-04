@@ -39,8 +39,6 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T>
         void join_right(node_ptr parent);
         Key split(node_ptr node);
         node_ptr get_node(int index);
-        void update_size();
-        void set_size(int sz);
         int size();
         int keys_size();
         int nodes_size();
@@ -60,7 +58,6 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T>
     protected:
         keys_type* child_keys = nullptr;
         nodes_type* child_nodes = nullptr;
-        int _size = 0;
 };
 
 
@@ -320,11 +317,7 @@ int BPlusTreeBaseInternalNode<Key, T>::get_index(Node* node)
 template<class Key, class T>
 int BPlusTreeBaseInternalNode<Key, T>::size()
 {
-	return _size;
-	
-	//if(!child_nodes)
-	//	return 0;
-    //return child_nodes->size();
+	return nodes_size();
 }
 
 template<class Key, class T>
@@ -337,18 +330,6 @@ template<class Key, class T>
 int BPlusTreeBaseInternalNode<Key, T>::nodes_size()
 {
 	return child_nodes->size();
-}
-
-template<class Key, class T>
-void BPlusTreeBaseInternalNode<Key, T>::update_size()
-{
-	set_size(nodes_size());
-}
-
-template<class Key, class T>
-void BPlusTreeBaseInternalNode<Key, T>::set_size(int sz)
-{
-	_size = sz;
 }
 
 template<class Key, class T>

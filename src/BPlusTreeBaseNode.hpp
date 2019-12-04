@@ -33,8 +33,6 @@ class BPlusTreeBaseNode
         virtual void shift_right(node_ptr parent) = 0;
         virtual void join_left(node_ptr parent) = 0;
         virtual void join_right(node_ptr parent) = 0;
-        virtual void set_size(int sz) = 0;
-        virtual void update_size() = 0;
         virtual Key split(node_ptr node) = 0;
         virtual int get_index(const Key& key) = 0;
         
