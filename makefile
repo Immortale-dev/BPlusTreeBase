@@ -10,15 +10,13 @@ SRCST:=$(wildcard $(TESTPATH)*.cpp)
 OBJS:=$(SRCS:%.hpp=%.o)
 OBJST:=$(SRCST:%.cpp=%.o)
 
-all: generate_o generate_t
+all: generate_t
 
 	
 generate_o: ${OBJS} ${OBJST}
 
 generate_t: 
-	${CC} -Isrc -Itest/src -Itest -o test/test test/test.cpp 
-	
-	
+	${CC} -Isrc -Itest/src -Itest -o test.exe test/test.cpp 
 	
 %.test.o: %.test.cpp
 	${CC} $(CFLAGS) $< -o $@ -Isrc -Itest

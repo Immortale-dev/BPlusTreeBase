@@ -3,8 +3,9 @@
 
 #include <iostream>
 #include <cassert>
+#include <cstdlib>
+#include <unordered_set>
 #include "BPlusTreeBase.hpp"
-#include "qtest.hpp"
 
 
 
@@ -510,6 +511,42 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 		
 		IT("tree size should be 99", {
 			EXPECT(tree.size()).toBe(99);
+		});
+	});
+	
+	DESCRIBE("Add 100`000 items randomly and remove 100`000 items randomly to both btree and unordered_set", {
+		BPlusTreeBase<int,int> tree(50);
+		unordered_set<int> tmp;
+		
+		BEFORE_ALL({
+			for(int i=0;i<100000;i++){
+				int r = rand();
+				tree.insert(make_pair(r,r));
+				tmp.insert(r);
+			}
+			
+			for(int i=0;i<100000;i++){
+				int r = rand();
+				tree.erase(r);
+				tmp.erase(r);
+			}
+		});
+		
+		IT("Every item from unordere_set should appear in tree", {
+			EXPECT(tree.size()).toBe(tmp.size());
+			vector<int> v1;
+			vector<int> v2;
+			for(auto& it : tmp){
+				v1.push_back(it);
+			}
+			for(auto& it : tree){
+				v2.push_back(it.first);
+				EXPECT(it.first).toBe(it.second);
+			}
+			sort(v1.begin(), v1.end());
+			sort(v2.begin(), v2.end());
+			EXPECT(v1).toBeIterableEqual(v2);
+			INFO_PRINT("Elements left: " + to_string(tree.size()));
 		});
 	});
 });
