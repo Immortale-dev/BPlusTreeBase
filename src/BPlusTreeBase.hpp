@@ -154,7 +154,8 @@ typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::insert(value_type 
 template<class Key, class T>
 void BPlusTreeBase<Key,T>::erase(Key item)
 {
-    erase(find(item));
+    node_ptr node = get_root();
+    erase_req(node, nullptr, item);
 }
 
 template<class Key, class T>
@@ -162,9 +163,7 @@ void BPlusTreeBase<Key,T>::erase(iterator it)
 {
     if(it == end())
         return;
-    node_ptr node = get_root();
-    Key key = it.get_key();
-    erase_req(node, nullptr, key);
+    erase(it.get_key());
 }
 
 template<class Key, class T>
@@ -492,13 +491,29 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     if(nodeRight){
         node->join_right(parent);
         if(is_leaf(node)){
-			node->set_next_leaf(joinNode->next_leaf());
+			node_ptr nextLeaf = joinNode->next_leaf();
+			if(nextLeaf){
+				// Update next to right node prev leaf
+				processSearchNodeStart(nextLeaf);
+				nextLeaf->set_prev_leaf(node);
+				processInsertNode(nextLeaf);
+				processSearchNodeEnd(nextLeaf);
+			}
+			node->set_next_leaf(nextLeaf);
 		}
     }
     else{
         node->join_left(parent);
         if(is_leaf(node)){
-			node->set_prev_leaf(joinNode->prev_leaf());
+			node_ptr prevLeaf = joinNode->prev_leaf();
+			if(prevLeaf){
+				// Update prev to left node next leaf
+				processSearchNodeStart(prevLeaf);
+				prevLeaf->set_next_leaf(node);
+				processInsertNode(prevLeaf);
+				processSearchNodeEnd(prevLeaf);
+			}
+			node->set_prev_leaf(prevLeaf);
 		}
     }
     
@@ -571,9 +586,17 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         
         // Update leaf nodes dependencies
         if(is_leaf(node)){
-			nnode->set_next_leaf(node->next_leaf());
+			node_ptr nextLeaf = node->next_leaf();
+			nnode->set_next_leaf(nextLeaf);
 			node->set_next_leaf(nnode);
 			nnode->set_prev_leaf(node);
+			if(nextLeaf){
+				// Set next to newly created node prev leaf
+				processSearchNodeStart(nextLeaf);
+				nextLeaf->set_prev_leaf(nnode);
+				processInsertNode(nextLeaf);
+				processSearchNodeEnd(nextLeaf);
+			}
 		}
 		
 		// Process newly created node
