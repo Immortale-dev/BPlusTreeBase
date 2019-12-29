@@ -63,14 +63,14 @@ class BPlusTreeBase
         bool is_leaf(node_ptr node);
         void set_root(node_ptr node);
         void release_node(node_ptr node);
-        virtual void processSearchNodeStart(node_ptr node);
-        virtual void processSearchNodeEnd(node_ptr node);
-        virtual void processInsertNode(node_ptr node);
-        virtual void processDeleteNode(node_ptr node);
-        virtual void processIteratorNodeReserved(node_ptr node);
-        virtual void processIteratorNodeReleased(node_ptr node);
-        virtual void processIteratorMoveStart(iterator& it, node_ptr node, int step);
-        virtual void processIteratorMoveEnd(iterator& it, node_ptr node, int step);
+        virtual void processSearchNodeStart(node_ptr& node);
+        virtual void processSearchNodeEnd(node_ptr& node);
+        virtual void processInsertNode(node_ptr& node);
+        virtual void processDeleteNode(node_ptr& node);
+        virtual void processIteratorNodeReserved(node_ptr& node);
+        virtual void processIteratorNodeReleased(node_ptr& node);
+        virtual void processIteratorMoveStart(iterator& it, node_ptr& node, int step);
+        virtual void processIteratorMoveEnd(iterator& it, node_ptr& node, int step);
         void release_entry_item(EntryItem_ptr item);
         EntryItem_ptr create_entry_item(Key key, T val);
         long v_count;
@@ -291,7 +291,7 @@ typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key, T>::get_root()
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processSearchNodeStart(node_ptr node)
+void BPlusTreeBase<Key, T>::processSearchNodeStart(node_ptr& node)
 {
 	#ifdef DEBUG
 		mutex_count++;
@@ -301,7 +301,7 @@ void BPlusTreeBase<Key, T>::processSearchNodeStart(node_ptr node)
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processSearchNodeEnd(node_ptr node)
+void BPlusTreeBase<Key, T>::processSearchNodeEnd(node_ptr& node)
 {
 	#ifdef DEBUG
 		mutex_count--;
@@ -311,19 +311,19 @@ void BPlusTreeBase<Key, T>::processSearchNodeEnd(node_ptr node)
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processInsertNode(node_ptr node)
+void BPlusTreeBase<Key, T>::processInsertNode(node_ptr& node)
 {
     return;
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processDeleteNode(node_ptr node)
+void BPlusTreeBase<Key, T>::processDeleteNode(node_ptr& node)
 {
     return;
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorNodeReserved(node_ptr node)
+void BPlusTreeBase<Key, T>::processIteratorNodeReserved(node_ptr& node)
 {
 	#ifdef DEBUG
 		reserved_count++;
@@ -332,7 +332,7 @@ void BPlusTreeBase<Key, T>::processIteratorNodeReserved(node_ptr node)
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr node)
+void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr& node)
 {
 	#ifdef DEBUG
 		reserved_count--;
@@ -341,7 +341,7 @@ void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr node)
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveStart(iterator& it, node_ptr node, int step)
+void BPlusTreeBase<Key, T>::processIteratorMoveStart(iterator& it, node_ptr& node, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count++;
@@ -350,7 +350,7 @@ void BPlusTreeBase<Key, T>::processIteratorMoveStart(iterator& it, node_ptr node
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveEnd(iterator& it, node_ptr node, int step)
+void BPlusTreeBase<Key, T>::processIteratorMoveEnd(iterator& it, node_ptr& node, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count--;
