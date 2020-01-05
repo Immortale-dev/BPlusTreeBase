@@ -29,7 +29,7 @@ class BPlusTreeBase
         iterator find(Key key);
         void erase(Key key);
         void erase(iterator it);
-        iterator insert(value_type item);
+        iterator insert(value_type item, bool overwrite = false);
         iterator begin();
         iterator end();
         long size();
@@ -58,7 +58,7 @@ class BPlusTreeBase
         node_ptr create_leaf_node();
         node_ptr get_root();
         bool is_root(node_ptr node);
-        bool insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins);
+        bool insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite);
         bool erase_req(node_ptr node, node_ptr parent, const Key &key);
         bool is_leaf(node_ptr node);
         void set_root(node_ptr node);
@@ -136,13 +136,13 @@ typename BPlusTreeBase<Key, T>::iterator BPlusTreeBase<Key,T>::find(Key k)
 }
 
 template<class Key, class T>
-typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::insert(value_type item)
+typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::insert(value_type item, bool overwrite)
 {
     EntryItem_ptr itm = create_entry_item(item.first, item.second);
     const Key& key = get_entry_key(itm);
     node_ptr node = get_root();
     node_ptr ins = nullptr;
-    insert_req(node, nullptr, itm, ins);
+    insert_req(node, nullptr, itm, ins, overwrite);
     
     processSearchNodeStart(ins);
     childs_type_iterator child_iterator = ins->childs_iterator()+ins->get_index(key);
@@ -546,7 +546,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 }
 
 template<class Key, class T>
-bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins)
+bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite)
 {
     // Process Node before search
     processSearchNodeStart(node);
@@ -561,9 +561,14 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
             node->insert(item);
             nodeChanged = true;
         }
+        else if(overwrite){
+			int index = node->get_index(key);
+			node->get(index)->second = item->second;
+			nodeChanged = true;
+		}
     }
     else{
-        nodeChanged = insert_req(node->find(key), node, item, ins);
+        nodeChanged = insert_req(node->find(key), node, item, ins, overwrite);
     }
 
     node_ptr nnode = nullptr;

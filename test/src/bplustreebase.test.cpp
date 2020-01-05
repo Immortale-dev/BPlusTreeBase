@@ -514,6 +514,24 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 		});
 	});
 	
+	DESCRIBE("Add item {10,10}", {
+		BPlusTreeBase<int, int> tree(3);
+		
+		BEFORE_ALL({
+			tree.insert(make_pair(10,10));
+		});
+		
+		IT("Call insert {10,20} w/o overwriting, value should be equal to 10", {
+			tree.insert(make_pair(10,20));
+			EXPECT(tree.find(10)->second).toBe(10);
+		});
+		
+		IT("Call insert {10,20} with overwriting, value should be equal to 20", {
+			tree.insert(make_pair(10,20), true);
+			EXPECT(tree.find(10)->second).toBe(20);
+		});
+	});
+	
 	DESCRIBE("Add 100`000 items randomly and remove 100`000 items randomly to both btree and unordered_set", {
 		BPlusTreeBase<int,int> tree(50);
 		unordered_set<int> tmp;
