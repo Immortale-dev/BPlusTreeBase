@@ -583,13 +583,24 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         if(is_leaf(node) && !node->exists(key)){
 			ins = nnode;
 		}
+		
+		// Update dependencies of newly created node
+		if(is_leaf(node)){
+			node_ptr nextLeaf = node->next_leaf();
+			nnode->set_next_leaf(nextLeaf);
+			nnode->set_prev_leaf(node);
+		}
+		// Process newly created node
+        processInsertNode(nnode);
+        // Process Node after search
+        processSearchNodeEnd(nnode);
         
         // Update leaf nodes dependencies
         if(is_leaf(node)){
 			node_ptr nextLeaf = node->next_leaf();
-			nnode->set_next_leaf(nextLeaf);
+			//nnode->set_next_leaf(nextLeaf);
 			node->set_next_leaf(nnode);
-			nnode->set_prev_leaf(node);
+			//nnode->set_prev_leaf(node);
 			if(nextLeaf){
 				// Set next to newly created node prev leaf
 				processSearchNodeStart(nextLeaf);
@@ -598,12 +609,6 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 				processSearchNodeEnd(nextLeaf);
 			}
 		}
-		
-		// Process newly created node
-        processInsertNode(nnode);
-
-        // Process Node after search
-        processSearchNodeEnd(nnode);
 
         if(is_root(node)){
 			// Process updated Node before parent
