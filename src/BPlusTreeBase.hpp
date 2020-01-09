@@ -29,6 +29,7 @@ class BPlusTreeBase
         iterator find(Key key);
         void erase(Key key);
         void erase(iterator it);
+        void clear();
         iterator insert(value_type item, bool overwrite = false);
         iterator begin();
         iterator end();
@@ -60,6 +61,7 @@ class BPlusTreeBase
         bool is_root(node_ptr node);
         bool insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite);
         bool erase_req(node_ptr node, node_ptr parent, const Key &key);
+        void clear_req(node_ptr node);
         bool is_leaf(node_ptr node);
         void set_root(node_ptr node);
         void release_node(node_ptr node);
@@ -93,6 +95,7 @@ BPlusTreeBase<Key,T>::~BPlusTreeBase()
     if(!get_root())
         return;
     release_node(root);
+    root = nullptr;
 }
 
 template<class Key, class T>
@@ -164,6 +167,39 @@ void BPlusTreeBase<Key,T>::erase(iterator it)
     if(it == end())
         return;
     erase(it.get_key());
+}
+
+template<class Key, class T>
+void BPlusTreeBase<Key,T>::clear()
+{
+	node_ptr node = get_root();
+	clear_req(node);
+	v_count = 0;
+}
+
+template<class Key, class T>
+void BPlusTreeBase<Key,T>::clear_req(node_ptr node)
+{
+	processSearchNodeStart(node);
+	if(node->is_leaf()){
+		// Delete node if leaf
+		processDeleteNode(node);
+		node->get_childs()->resize(0);
+		node->set_prev_leaf(nullptr);
+		node->set_next_leaf(nullptr);
+	}
+	else{
+		// Iterate over child nodes
+		for(auto& n : (*node->get_nodes())){
+			clear_req(n);
+		}
+		// Delete internal node
+		processDeleteNode(node);
+		node->get_keys()->resize(0);
+		node->get_nodes()->resize(0);
+	}
+	processSearchNodeEnd(node);
+	release_node(node);
 }
 
 template<class Key, class T>

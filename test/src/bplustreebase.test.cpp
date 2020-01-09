@@ -7,14 +7,12 @@
 #include <unordered_set>
 #include "BPlusTreeBase.hpp"
 
-
-
 using namespace std;
-
 
 
 DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 	
+	srand (time(NULL));
 	auto base = BPlusTreeBase<int,string>(3);
 		
 	DESCRIBE("w/o doing anything", {
@@ -566,5 +564,31 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			EXPECT(v1).toBeIterableEqual(v2);
 			INFO_PRINT("Elements left: " + to_string(tree.size()));
 		});
+	});
+});
+
+DESCRIBE("Given tree with factor=50, Add 100`000 items to the tree and use clear method", {
+	BPlusTreeBase<int,int> tree(50);
+	BEFORE_ALL({
+		for(int i=0;i<100000;i++){
+			int r = rand();
+			tree.insert(make_pair(r,r));
+		}
+		tree.clear();
+	});
+	
+	IT("size should be equal to 0", {
+		EXPECT(tree.size()).toBe(0);
+	});
+	
+	// Because root node is still active
+	IT("`active_nodes_count` debug global variable should be equal to 1", {
+		EXPECT(active_nodes_count).toBe(1); 
+		INFO_PRINT("Active nodes count: " + to_string(active_nodes_count));
+	});
+	
+	IT("And debug `mutex_count` should be 0", {
+		EXPECT(tree.mutex_count).toBe(0);
+		INFO_PRINT("Mutex: "+to_string(tree.mutex_count));
 	});
 });

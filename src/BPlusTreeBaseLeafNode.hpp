@@ -85,6 +85,8 @@ BPlusTreeBaseLeafNode<Key, T>::~BPlusTreeBaseLeafNode()
 	if(childs){
 		delete childs;
 	}
+	set_prev_leaf(nullptr);
+	set_next_leaf(nullptr);
 }
 
 template<class Key, class T>

@@ -1,12 +1,14 @@
 #ifndef BPLUSTREEBASENODE_H
 #define BPLUSTREEBASENODE_H
 
-#include <iostream>
 #include <vector>
 #include <utility>
 #include <mutex>
 #include <memory>
 
+#ifdef DEBUG
+int active_nodes_count = 0;
+#endif
 
 template<class Key, class T>
 class BPlusTreeBaseNode
@@ -93,13 +95,17 @@ class BPlusTreeBaseNode
 template<class Key, class T>
 BPlusTreeBaseNode<Key,T>::BPlusTreeBaseNode()
 {
-
+	#ifdef DEBUG
+	active_nodes_count++;
+	#endif
 }
 
 template<class Key, class T>
 BPlusTreeBaseNode<Key,T>::~BPlusTreeBaseNode()
 {
-
+	#ifdef DEBUG
+	active_nodes_count--;
+	#endif
 }
 
 #endif // BPLUSTREEBASENODE_H
