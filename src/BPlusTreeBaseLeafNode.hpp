@@ -79,10 +79,10 @@ typename BPlusTreeBaseLeafNode<Key, T>::child_type* BPlusTreeBaseLeafNode<Key, T
 template<class Key, class T>
 BPlusTreeBaseLeafNode<Key, T>::~BPlusTreeBaseLeafNode()
 {
-    for(int i=0;i<childs_size();i++){
-        release_node((*childs)[i]);
-	}
 	if(childs){
+		for(int i=0;i<childs_size();i++){
+			release_node((*childs)[i]);
+		}
 		delete childs;
 	}
 	set_prev_leaf(nullptr);

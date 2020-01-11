@@ -90,13 +90,13 @@ typename BPlusTreeBaseInternalNode<Key, T>::nodes_type* BPlusTreeBaseInternalNod
 template<class Key, class T>
 BPlusTreeBaseInternalNode<Key, T>::~BPlusTreeBaseInternalNode()
 {
-    for(int i=0;i<nodes_size();i++){
-        release_node((*child_nodes)[i]);
-	}
 	if(child_keys){
 		delete child_keys;
 	}
 	if(child_nodes){
+		for(int i=0;i<nodes_size();i++){
+			release_node((*child_nodes)[i]);
+		}
 		delete child_nodes;
 	}
 }
