@@ -159,7 +159,7 @@ int BPlusTreeBaseLeafNode<Key, T>::size()
 }
 
 template<class Key, class T>
-BPlusTreeBaseLeafNode<Key, T>::childs_size()
+int BPlusTreeBaseLeafNode<Key, T>::childs_size()
 {
 	return childs->size();
 }
