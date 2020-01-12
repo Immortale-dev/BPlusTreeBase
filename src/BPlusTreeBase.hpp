@@ -485,12 +485,13 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
         // Shift nodes
         node->shift_left(parent);
 
+        // Process node
+        processInsertNode(node);
+        processSearchNodeEnd(node);
+
         // Process updated node
         processInsertNode(nodeLeft);
         processSearchNodeEnd(nodeLeft);
-
-        processInsertNode(node);
-        processSearchNodeEnd(node);
 
         // Parent node changed
         return true;
@@ -511,12 +512,13 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
         // Shift nodes
         node->shift_right(parent);
 
+        // Process node
+        processInsertNode(node);
+        processSearchNodeEnd(node);
+
         // Process updated node
         processInsertNode(nodeRight);
         processSearchNodeEnd(nodeRight);
-
-        processInsertNode(node);
-        processSearchNodeEnd(node);
 
         // Parent node changed
         return true;
@@ -558,11 +560,11 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 		joinNode->set_prev_leaf(nullptr);
 	}
 
-    // Delete useless node
-    processDeleteNode(joinNode);
-    
     // Save node
     processInsertNode(node);
+    
+    // Delete useless node
+    processDeleteNode(joinNode);
     
     // End processing with side nodes
 	if(nodeLeft){
