@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
+#include <thread>
+#include <mutex>
 #include <unordered_set>
 #include "BPlusTreeBase.hpp"
 
@@ -590,5 +592,45 @@ DESCRIBE("Given tree with factor=50, Add 100`000 items to the tree and use clear
 	IT("And debug `mutex_count` should be 0", {
 		EXPECT(tree.mutex_count).toBe(0);
 		INFO_PRINT("Mutex: "+to_string(tree.mutex_count));
+	});
+});
+
+DESCRIBE("Multithreading insert/erase test", {
+	BPlusTreeBase<int,int> tree(3);
+	int tc = 10;
+	int cnt = 100;
+    mutex mtx;
+    
+	BEFORE_ALL({
+		vector<thread> trds;
+		for(int i=0;i<tc;i++){
+			thread t([&cnt,&tree,&tc,&mtx](int i){
+				while(i<cnt){
+                    // It is not for what I am looging for...
+                    lock_guard<mutex> lock(mtx);
+					tree.insert(make_pair(i,i));
+					i+=tc;
+				}
+			}, i);
+			trds.push_back(move(t));
+		}
+		for(auto &t : trds){
+			t.join();
+		}
+	});
+	IT("tree size should be 100", {
+		EXPECT(tree.size()).toBe(cnt);
+	});
+	IT("tree should contain items from 0 to 99", {
+		vector<int> v1,v2;
+		for(int i=0;i<100;i++){
+			v1.push_back(i);
+		}
+		int ind = 0;
+		for(auto& it : tree){
+			v2.push_back(it.first);
+			ind++;
+		}
+		EXPECT(v1).toBeIterableEqual(v2);
 	});
 });
