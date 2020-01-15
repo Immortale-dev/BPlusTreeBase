@@ -10,13 +10,22 @@
 template<class Key, class T>
 class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
 {
+	struct child_item_type;
+	
     typedef BPlusTreeBaseNode<Key, T> Node;
     typedef std::shared_ptr<Node> node_ptr;
     typedef BPlusTreeBaseLeafNode<Key, T> LeafNode;
-    typedef std::pair<const Key,T> child_item_type;
+    typedef std::pair<const Key,T> record_type;
+    typedef std::shared_ptr<record_type> record_type_ptr;
     typedef std::shared_ptr<child_item_type> child_item_type_ptr;
     typedef std::vector<child_item_type_ptr> child_type;
     typedef typename child_type::iterator childs_type_iterator;
+    
+    struct child_item_type{
+		int pos;
+		node_ptr node;
+		record_type_ptr item;
+	};
 
     public:
         BPlusTreeBaseLeafNode();
@@ -129,6 +138,7 @@ void BPlusTreeBaseLeafNode<Key, T>::erase(childs_type_iterator s, childs_type_it
 template<class Key, class T>
 void BPlusTreeBaseLeafNode<Key, T>::insert(int index, childs_type_iterator s, childs_type_iterator e)
 {
+	int i=0;
     childs->insert(childs->begin()+index, s, e);
 }
 
@@ -284,7 +294,7 @@ void BPlusTreeBaseLeafNode<Key, T>::set_prev_leaf(node_ptr node)
 template<class Key, class T>
 const Key BPlusTreeBaseLeafNode<Key, T>::get_key(child_item_type_ptr item)
 {
-    return item->first;
+    return item->item->first;
 }
 
 template<class Key, class T>
