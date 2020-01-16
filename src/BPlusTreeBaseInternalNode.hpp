@@ -107,6 +107,7 @@ void BPlusTreeBaseInternalNode<Key, T>::release_node(node_ptr node)
 	if(node->is_leaf()){
 		node->set_prev_leaf(nullptr);
 		node->set_next_leaf(nullptr);
+		node->update_positions(nullptr);
 	}
     // TODO: replace with allocator methods
     // No need to delete smart ptr

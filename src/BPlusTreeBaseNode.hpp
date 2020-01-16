@@ -12,17 +12,26 @@ int active_nodes_count = 0;
 
 template<class Key, class T>
 class BPlusTreeBaseNode
-{
-	
-	typedef BPlusTreeBaseNode Node;
-	typedef std::shared_ptr<Node> node_ptr;
-	typedef std::vector<Key> keys_type;
-	typedef std::vector<node_ptr> nodes_type;
-	typedef typename nodes_type::iterator nodes_type_iterator;
-	typedef typename keys_type::iterator keys_type_iterator;
-	typedef std::pair<const Key,T> child_item_type;
-	typedef std::shared_ptr<child_item_type> child_item_type_ptr;
-	typedef std::vector<child_item_type_ptr> child_type;
+{	
+	public:
+		struct child_item_type;
+		
+		typedef BPlusTreeBaseNode Node;
+		typedef std::shared_ptr<Node> node_ptr;
+		typedef std::vector<Key> keys_type;
+		typedef std::vector<node_ptr> nodes_type;
+		typedef std::pair<const Key,T> record_type;
+		typedef std::shared_ptr<record_type> record_type_ptr;
+		typedef typename nodes_type::iterator nodes_type_iterator;
+		typedef typename keys_type::iterator keys_type_iterator;
+		typedef std::shared_ptr<child_item_type> child_item_type_ptr;
+		typedef std::vector<child_item_type_ptr> child_type;
+		
+		struct child_item_type{
+			int pos;
+			node_ptr node;
+			record_type_ptr item;
+		};
 	
 	public:
 		typedef typename child_type::iterator childs_type_iterator;
@@ -75,6 +84,7 @@ class BPlusTreeBaseNode
         virtual childs_type_iterator childs_iterator_end() { return {}; };
         virtual void release_node(child_item_type_ptr node) {};
         virtual void insert(child_item_type_ptr item) {};
+        virtual void insert(record_type_ptr item) {};
         virtual void insert(int index, childs_type_iterator s, childs_type_iterator e) {};
         virtual child_item_type_ptr erase(int index) { return nullptr; };
         virtual void erase(childs_type_iterator s, childs_type_iterator e) {};
@@ -87,6 +97,7 @@ class BPlusTreeBaseNode
         virtual const Key get_key(child_item_type_ptr item) { return 0; };
         virtual node_ptr next_leaf() { return nullptr; };
         virtual node_ptr prev_leaf() { return nullptr; };
+        virtual void update_positions(node_ptr node) {};
         
         std::shared_ptr<void> data = nullptr;
         std::mutex mtx;

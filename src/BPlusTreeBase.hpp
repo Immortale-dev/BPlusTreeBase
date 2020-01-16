@@ -71,9 +71,9 @@ class BPlusTreeBase
         virtual void processDeleteNode(node_ptr& node);
         virtual void processIteratorNodeReserved(node_ptr& node);
         virtual void processIteratorNodeReleased(node_ptr& node);
-        virtual void processIteratorMoveStart(iterator& it, node_ptr& node, int step);
-        virtual void processIteratorMoveEnd(iterator& it, node_ptr& node, int step);
-        void release_entry_item(EntryItem_ptr item);
+        virtual void processIteratorMoveStart(typename Node::child_item_type_ptr& item, int step);
+        virtual void processIteratorMoveEnd(typename Node::child_item_type_ptr& item, int step);
+        void release_entry_item(typename Node::child_item_type_ptr item);
         EntryItem_ptr create_entry_item(Key key, T val);
         long v_count;
         const int factor;
@@ -121,17 +121,21 @@ typename BPlusTreeBase<Key, T>::iterator BPlusTreeBase<Key,T>::find(Key k)
 {
 	const Key key = k;
     node_ptr node = get_root();
+    processSearchNodeStart(node);
     while(true){
-        if(!node) return end();
-        processSearchNodeStart(node);
+        if(!node){
+			processSearchNodeEnd(node);
+			return end();
+		}
         if(node->is_leaf()){
 			iterator it = end();
             if(node->exists(key))
-                it = iterator(node, node->childs_iterator()+node->get_index(key), this);
+                it = iterator(node->get(node->get_index(key)), this);
 			processSearchNodeEnd(node);
             return it;
         }
         node_ptr tnode = node->find(key);
+        processSearchNodeStart(tnode);
         processSearchNodeEnd(node);
         node = tnode;
     }
@@ -147,11 +151,11 @@ typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::insert(value_type 
     node_ptr ins = nullptr;
     insert_req(node, nullptr, itm, ins, overwrite);
     
-    processSearchNodeStart(ins);
-    childs_type_iterator child_iterator = ins->childs_iterator()+ins->get_index(key);
-    processSearchNodeEnd(ins);
+    //processSearchNodeStart(ins);
+    //childs_type_iterator child_iterator = ins->childs_iterator()+ins->get_index(key);
+    //processSearchNodeEnd(ins);
     
-    return iterator(ins, child_iterator, this);
+    return find(key);
 }
 
 template<class Key, class T>
@@ -210,16 +214,16 @@ typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::begin()
     node_ptr node = min_node();
     
     processSearchNodeStart(node);
-    childs_type_iterator child_iterator = node->childs_iterator();
+    iterator it(node->first_child(),this);
     processSearchNodeEnd(node);
     
-    return iterator(node,child_iterator,this);
+    return it;
 }
 
 template<class Key, class T>
 typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::end()
 {
-    return iterator(last, {}, this);
+    return iterator(nullptr, this);
 }
 
 template<class Key, class T>
@@ -314,6 +318,9 @@ typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key, T>::create_leaf_node(
 template<class Key, class T>
 void BPlusTreeBase<Key, T>::release_node(node_ptr node)
 {
+	if(node->is_leaf()){
+		node->update_positions(nullptr);
+	}
     // TODO: replace with allocator functions
     // No need to delete smart ptr
     // delete node;
@@ -377,7 +384,7 @@ void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr& node)
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveStart(iterator& it, node_ptr& node, int step)
+void BPlusTreeBase<Key, T>::processIteratorMoveStart(typename Node::child_item_type_ptr& item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count++;
@@ -386,7 +393,7 @@ void BPlusTreeBase<Key, T>::processIteratorMoveStart(iterator& it, node_ptr& nod
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveEnd(iterator& it, node_ptr& node, int step)
+void BPlusTreeBase<Key, T>::processIteratorMoveEnd(typename Node::child_item_type_ptr& item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count--;
@@ -402,7 +409,7 @@ typename BPlusTreeBase<Key,T>::EntryItem_ptr BPlusTreeBase<Key, T>::create_entry
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::release_entry_item(EntryItem_ptr item)
+void BPlusTreeBase<Key, T>::release_entry_item(typename Node::child_item_type_ptr item)
 {
 	// TODO replace with allocator functions
 	// No need to delete shared ptr
@@ -423,6 +430,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 			return false;
 		}
         release_entry_item(node->erase(node->get_index(key)));
+        node->update_positions(node);
         v_count--;
         nodeChanged = true;
 	}
@@ -601,9 +609,10 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         }
         else if(overwrite){
 			int index = node->get_index(key);
-			node->get(index)->second = item->second;
+			node->get(index)->item->second = item->second;
 			nodeChanged = true;
 		}
+		node->update_positions(node);
     }
     else{
         nodeChanged = insert_req(node->find(key), node, item, ins, overwrite);
@@ -752,7 +761,7 @@ void BPlusTreeBase<Key, T>::bfs_result(node_ptr node, std::vector<Key>& res)
 		res.push_back(node->size());
 		auto it = node->childs_iterator();
 		for(int i=0;i<node->size();i++){
-			res.push_back((*it)->first);
+			res.push_back((*it)->item->first);
 			++it;
 		}
 		return;
