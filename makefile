@@ -16,7 +16,7 @@ all: generate_t
 generate_o: ${OBJS} ${OBJST}
 
 generate_t: 
-	${CC} -Isrc -Itest/src -Itest -o test.exe test/test.cpp 
+	${CC} -Wall -Isrc -Itest/src -Itest -o test.exe test/test.cpp 
 	
 %.test.o: %.test.cpp
 	${CC} $(CFLAGS) $< -o $@ -Isrc -Itest

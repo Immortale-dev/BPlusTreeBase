@@ -133,7 +133,6 @@ void BPlusTreeBaseLeafNode<Key, T>::erase(childs_type_iterator s, childs_type_it
 template<class Key, class T>
 void BPlusTreeBaseLeafNode<Key, T>::insert(int index, childs_type_iterator s, childs_type_iterator e)
 {
-	int i=0;
     childs->insert(childs->begin()+index, s, e);
 }
 
