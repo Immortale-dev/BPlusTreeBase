@@ -23,6 +23,7 @@ class BPlusTreeBase
 		typedef std::pair<Key, T> value_type;
 		typedef typename Node::childs_type_iterator childs_type_iterator;	
 		typedef std::shared_ptr<Node> node_ptr;
+		typedef typename Node::child_item_type_ptr childs_item_ptr;
 		
         BPlusTreeBase(int factor);
         virtual ~BPlusTreeBase();
@@ -71,9 +72,9 @@ class BPlusTreeBase
         virtual void processDeleteNode(node_ptr& node);
         virtual void processIteratorNodeReserved(node_ptr& node);
         virtual void processIteratorNodeReleased(node_ptr& node);
-        virtual void processIteratorMoveStart(typename Node::child_item_type_ptr& item, int step);
-        virtual void processIteratorMoveEnd(typename Node::child_item_type_ptr& item, int step);
-        void release_entry_item(typename Node::child_item_type_ptr item);
+        virtual void processIteratorMoveStart(childs_item_ptr& item, int step);
+        virtual void processIteratorMoveEnd(childs_item_ptr& item, int step);
+        void release_entry_item(childs_item_ptr item);
         EntryItem_ptr create_entry_item(Key key, T val);
         long v_count;
         const int factor;
@@ -384,7 +385,7 @@ void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr& node)
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveStart(typename Node::child_item_type_ptr& item, int step)
+void BPlusTreeBase<Key, T>::processIteratorMoveStart(childs_item_ptr& item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count++;
@@ -393,7 +394,7 @@ void BPlusTreeBase<Key, T>::processIteratorMoveStart(typename Node::child_item_t
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveEnd(typename Node::child_item_type_ptr& item, int step)
+void BPlusTreeBase<Key, T>::processIteratorMoveEnd(childs_item_ptr& item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count--;
@@ -409,7 +410,7 @@ typename BPlusTreeBase<Key,T>::EntryItem_ptr BPlusTreeBase<Key, T>::create_entry
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::release_entry_item(typename Node::child_item_type_ptr item)
+void BPlusTreeBase<Key, T>::release_entry_item(childs_item_ptr item)
 {
 	// TODO replace with allocator functions
 	// No need to delete shared ptr
