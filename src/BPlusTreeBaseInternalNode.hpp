@@ -53,7 +53,7 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T>
         keys_type_iterator keys_iterator_end();
         nodes_type_iterator nodes_iterator();
         nodes_type_iterator nodes_iterator_end();
-        inline bool is_leaf();
+        bool is_leaf();
 
     protected:
         keys_type* child_keys = nullptr;

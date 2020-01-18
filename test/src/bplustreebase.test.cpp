@@ -583,9 +583,9 @@ DESCRIBE("Given tree with factor=50, Add 100`000 items to the tree and use clear
 		EXPECT(tree.size()).toBe(0);
 	});
 	
-	// Because root node is still active
-	IT("`active_nodes_count` debug global variable should be equal to 1", {
-		EXPECT(active_nodes_count).toBe(1); 
+	// Because root node and stem node is still active
+	IT("`active_nodes_count` debug global variable should be equal to 2", {
+		EXPECT(active_nodes_count).toBe(2); 
 		INFO_PRINT("Active nodes count: " + to_string(active_nodes_count));
 	});
 	
@@ -593,21 +593,40 @@ DESCRIBE("Given tree with factor=50, Add 100`000 items to the tree and use clear
 		EXPECT(tree.mutex_count).toBe(0);
 		INFO_PRINT("Mutex: "+to_string(tree.mutex_count));
 	});
+	
+	DESCRIBE("Add 100 nodes after clear is done", {
+		vector<int> check;
+		BEFORE_ALL({
+			for(int i=22;i<122;i++){
+				tree.insert(make_pair(i*i,i*2));
+				check.push_back(i*i);
+			}
+		});
+		
+		IT("Tree size should be equal to 100", {
+			EXPECT(tree.size()).toBe(100);
+		});
+		
+		IT("Tree should be equal to `check`", {
+			vector<int> tree_cont;
+			for(auto &it : tree){
+				tree_cont.push_back(it.first);
+			}
+			EXPECT(tree_cont).toBeIterableEqual(check);
+		});
+	});
 });
 
-DESCRIBE("Multithreading insert/erase test", {
-	BPlusTreeBase<int,int> tree(3);
+DESCRIBE("Multithreading insert", {
+	BPlusTreeBase<int,int> tree(10);
 	int tc = 10;
-	int cnt = 100;
-    mutex mtx;
+	int cnt = 10000;
     
 	BEFORE_ALL({
 		vector<thread> trds;
 		for(int i=0;i<tc;i++){
-			thread t([&cnt,&tree,&tc,&mtx](int i){
+			thread t([&cnt,&tree,&tc](int i){
 				while(i<cnt){
-                    // It is not for what I am looging for...
-                    lock_guard<mutex> lock(mtx);
 					tree.insert(make_pair(i,i));
 					i+=tc;
 				}
@@ -618,12 +637,12 @@ DESCRIBE("Multithreading insert/erase test", {
 			t.join();
 		}
 	});
-	IT("tree size should be 100", {
+	IT("tree size should be " + to_string(cnt), {
 		EXPECT(tree.size()).toBe(cnt);
 	});
-	IT("tree should contain items from 0 to 99", {
+	IT("tree should contain items from 0 to " + to_string(cnt-1), {
 		vector<int> v1,v2;
-		for(int i=0;i<100;i++){
+		for(int i=0;i<cnt;i++){
 			v1.push_back(i);
 		}
 		int ind = 0;
@@ -632,5 +651,28 @@ DESCRIBE("Multithreading insert/erase test", {
 			ind++;
 		}
 		EXPECT(v1).toBeIterableEqual(v2);
+	});
+	
+	DESCRIBE("Then multithreading erase", {
+		BEFORE_ALL({
+			vector<thread> trds;
+			for(int i=0;i<tc;i++){
+				thread t([&cnt,&tree,&tc](int i){
+					while(i<cnt){
+						tree.erase(i);
+						i+=tc;
+					}
+				}, i);
+				trds.push_back(move(t));
+			}
+			for(auto &t : trds){
+				t.join();
+			}
+		});
+		
+		IT("tree size should be 0", {
+			EXPECT(tree.size()).toBe(0);
+			INFO_PRINT("Mutex count: " + to_string(tree.mutex_count));
+		});
 	});
 });

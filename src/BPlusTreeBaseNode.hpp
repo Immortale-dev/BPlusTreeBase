@@ -49,7 +49,7 @@ class BPlusTreeBaseNode
         
         virtual void lock(){ mtx.lock(); };
         virtual void unlock(){ mtx.unlock(); };
-        virtual inline bool is_leaf(){ return 0; };
+        virtual bool is_leaf(){ return 0; };
         virtual node_ptr get_node(int index) { return nullptr; };
         virtual void release_node(node_ptr node) {};
         virtual void add_keys(int ind, Key key) {};
