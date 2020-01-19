@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <memory>
+#include <list>
 #include "BPlusTreeBaseNode.hpp"
 #include "BPlusTreeBaseInternalNode.hpp"
 #include "BPlusTreeBaseLeafNode.hpp"
@@ -26,6 +27,7 @@ class BPlusTreeBase
 		typedef std::shared_ptr<Node> node_ptr;
 		typedef typename Node::child_item_type_ptr childs_item_ptr;
 		typedef BPlusTreeBase<Key,T> self_type;
+		typedef std::list<node_ptr> node_list;
 		
         BPlusTreeBase(const self_type& obj);
         BPlusTreeBase(int factor);
@@ -42,13 +44,14 @@ class BPlusTreeBase
     
     // DEBUG METHODS
 	#ifdef DEBUG
-		int mutex_count = 0;
+		std::atomic<int> mutex_count;
 		int reserved_count = 0;
 		int iterator_move_count = 0;
 		void print_tree();
 		void print_tree(node_ptr node, std::string tabs);
 		std::vector<Key> bfs_result();
 		void bfs_result(node_ptr node, std::vector<Key>& res);
+		int get_mutex_count();
 	#endif
 
     protected:
@@ -63,8 +66,8 @@ class BPlusTreeBase
         node_ptr get_stem();
         bool is_root(node_ptr node);
         bool is_stem(node_ptr node);
-        bool insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite);
-        bool erase_req(node_ptr node, node_ptr parent, const Key &key);
+        bool insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite, node_list& list);
+        bool erase_req(node_ptr node, node_ptr parent, const Key &key, node_list& list);
         void clear_req(node_ptr node);
         bool is_leaf(node_ptr node);
         void set_root(node_ptr node);
@@ -94,6 +97,9 @@ BPlusTreeBase<Key,T>::BPlusTreeBase(const self_type& obj) : factor(obj.factor)
 	last = obj.last;
 	stem = obj.stem;
 	v_count = obj.v_count.load();
+	#ifdef DEBUG
+	mutex_count = obj.mutex_count.load();
+	#endif
 }
 
 template<class Key, class T>
@@ -104,6 +110,9 @@ BPlusTreeBase<Key,T>::BPlusTreeBase(int f) : factor(f)
     set_root(node);
     last = nullptr;
     v_count = 0;
+    #ifdef DEBUG
+    mutex_count = 0;
+    #endif
 }
 
 template<class Key, class T>
@@ -167,8 +176,14 @@ void BPlusTreeBase<Key,T>::insert(value_type item, bool overwrite)
     //const Key& key = get_entry_key(itm);
     node_ptr node = get_stem();
     node_ptr ins = nullptr;
-    insert_req(node, nullptr, itm, ins, overwrite);
     
+    // Create path list
+    node_list list;
+    list.push_back(node);
+    
+    insert_req(node, nullptr, itm, ins, overwrite, list);
+    
+    // TODO: return pair of node and bool
     //processSearchNodeStart(ins);
     //childs_type_iterator child_iterator = ins->childs_iterator()+ins->get_index(key);
     //processSearchNodeEnd(ins);
@@ -180,7 +195,9 @@ template<class Key, class T>
 void BPlusTreeBase<Key,T>::erase(Key item)
 {
     node_ptr node = get_stem();
-    erase_req(node, nullptr, item);
+    node_list list;
+    list.push_back(node);
+    erase_req(node, nullptr, item, list);
 }
 
 template<class Key, class T>
@@ -381,10 +398,10 @@ typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key, T>::get_stem()
 template<class Key, class T>
 void BPlusTreeBase<Key, T>::processSearchNodeStart(node_ptr& node)
 {
+	node->lock();
 	#ifdef DEBUG
 		mutex_count++;
 	#endif
-	node->lock();
     return;
 }
 
@@ -462,7 +479,7 @@ void BPlusTreeBase<Key, T>::release_entry_item(childs_item_ptr item)
 }
 
 template<class Key, class T>
-bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& key)
+bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& key, node_list& list)
 {
     // Process Node before search
     processSearchNodeStart(node);
@@ -480,7 +497,33 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
         nodeChanged = true;
 	}
     else{
-		nodeChanged = erase_req(node->find(key), node, key);
+		// Find next node
+		node_ptr n = node->find(key);
+		
+		// Add internal node to the path list
+		if(!n->is_leaf()){
+			list.push_back(n);
+		}
+		
+		// Remove and end with all nodes that will never be modified
+		if(n->size() > factor){
+			while(list.front().get() != node.get()){
+				node_ptr n = list.front();
+				processSearchNodeEnd(n);
+				list.pop_front();
+			}
+		}
+		
+		nodeChanged = erase_req(n, node, key, list);
+		
+		// If no nodes left return as there is nothing to do
+		if(list.empty()){
+			return false;
+		}
+		
+		// Remove current node from path list
+		list.pop_back();
+		
 		if(is_stem(node)){
 			// It is stem. No any operations required
 			processSearchNodeEnd(node);
@@ -642,7 +685,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 }
 
 template<class Key, class T>
-bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite)
+bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite, node_list& list)
 {
     // Process Node before search
     processSearchNodeStart(node);
@@ -665,7 +708,33 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 		node->update_positions(node);
     }
     else{
-        nodeChanged = insert_req(node->find(key), node, item, ins, overwrite);
+		// Find next node
+		node_ptr n = node->find(key);
+		
+		// Add internal node to the path list
+		if(!n->is_leaf()){
+			list.push_back(n);
+		}
+		
+		// Remove and end with all nodes from list that will never be modified
+		if(n->size() < factor*2-1){
+			while(list.front().get() != node.get()){
+				node_ptr n = list.front();
+				processSearchNodeEnd(n);
+				list.pop_front();
+			}
+		}
+		
+        nodeChanged = insert_req(node->find(key), node, item, ins, overwrite, list);
+        
+        // If no nodes left, return as there is nothing to do
+        if(list.empty()){
+			return false;
+		}
+		
+		// Remove this node from path
+        list.pop_back();
+        
         if(is_stem(node)){
 			// It is stem. No any operations required
 			processSearchNodeEnd(node);
@@ -804,6 +873,12 @@ std::vector<Key> BPlusTreeBase<Key, T>::bfs_result()
 	std::vector<Key> res;
 	bfs_result(get_root(), res);
 	return res;
+}
+
+template<class Key, class T>
+int BPlusTreeBase<Key, T>::get_mutex_count()
+{
+	return mutex_count.load();
 }
 
 template<class Key, class T>
