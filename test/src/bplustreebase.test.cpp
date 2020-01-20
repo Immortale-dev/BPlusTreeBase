@@ -1,15 +1,5 @@
 
-#define DEBUG
 
-#include <iostream>
-#include <cassert>
-#include <cstdlib>
-#include <thread>
-#include <mutex>
-#include <unordered_set>
-#include "BPlusTreeBase.hpp"
-
-using namespace std;
 
 
 DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
@@ -617,68 +607,3 @@ DESCRIBE("Given tree with factor=50, Add 100`000 items to the tree and use clear
 	});
 });
 
-DESCRIBE("Multithreading insert", {
-	BPlusTreeBase<int,int> tree(10);
-	int tc = 10;
-	int cnt = 10000;
-    
-	BEFORE_ALL({
-		vector<thread> trds;
-		for(int i=0;i<tc;i++){
-			thread t([&cnt,&tree,&tc](int i){
-				while(i<cnt){
-					tree.insert(make_pair(i,i));
-					i+=tc;
-				}
-			}, i);
-			trds.push_back(move(t));
-		}
-		for(auto &t : trds){
-			t.join();
-		}
-	});
-	IT("tree size should be " + to_string(cnt), {
-		EXPECT(tree.size()).toBe(cnt);
-	});
-	IT("mutext_count should be 0", {
-		EXPECT(tree.get_mutex_count()).toBe(0);
-		INFO_PRINT("Mutex count: " + to_string(tree.get_mutex_count()));
-	});
-	IT("tree should contain items from 0 to " + to_string(cnt-1), {
-		vector<int> v1,v2;
-		for(int i=0;i<cnt;i++){
-			v1.push_back(i);
-		}
-		int ind = 0;
-		for(auto& it : tree){
-			v2.push_back(it.first);
-			ind++;
-		}
-		EXPECT(v1).toBeIterableEqual(v2);
-	});
-	
-	DESCRIBE("Then multithreading erase", {
-		BEFORE_ALL({
-			vector<thread> trds;
-			for(int i=0;i<tc;i++){
-				thread t([&cnt,&tree,&tc](int i){
-					while(i<cnt){
-						tree.erase(i);
-						i+=tc;
-					}
-				}, i);
-				trds.push_back(move(t));
-			}
-			for(auto &t : trds){
-				t.join();
-			}
-		});
-		IT("tree size should be 0", {
-			EXPECT(tree.size()).toBe(0);
-		});
-		IT("mutext_count should be 0", {
-			EXPECT(tree.get_mutex_count()).toBe(0);
-			INFO_PRINT("Mutex count: " + to_string(tree.get_mutex_count()));
-		});
-	});
-});

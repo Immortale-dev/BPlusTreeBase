@@ -139,7 +139,6 @@ long long int BPlusTreeBase<Key,T>::size()
 template<class Key, class T>
 T BPlusTreeBase<Key, T>::operator[](Key key)
 {
-	// TODO: insert if not exists
 	return find(key)->second;
 }
 
@@ -183,7 +182,6 @@ void BPlusTreeBase<Key,T>::insert(value_type item, bool overwrite)
     
     insert_req(node, nullptr, itm, ins, overwrite, list);
     
-    // TODO: return pair of node and bool
     //processSearchNodeStart(ins);
     //childs_type_iterator child_iterator = ins->childs_iterator()+ins->get_index(key);
     //processSearchNodeEnd(ins);
