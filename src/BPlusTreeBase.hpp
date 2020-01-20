@@ -1,6 +1,7 @@
 #ifndef BPLUSTREEBASE_H
 #define BPLUSTREEBASE_H
 
+#include <iostream>
 #include <atomic>
 #include <memory>
 #include <list>
@@ -483,6 +484,15 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     processSearchNodeStart(node);
 
     bool nodeChanged = false;
+    
+    // Remove and end with all nodes that will never be modified
+	if(node->size() > factor){
+		while(list.front().get() != node.get()){
+			node_ptr n = list.front();
+			processSearchNodeEnd(n);
+			list.pop_front();
+		}
+	}
 
     if(is_leaf(node)){
 		if(!node->exists(key)){
@@ -493,24 +503,14 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
         node->update_positions(node);
         v_count--;
         nodeChanged = true;
+        list.pop_back();
 	}
     else{
 		// Find next node
 		node_ptr n = node->find(key);
 		
 		// Add internal node to the path list
-		if(!n->is_leaf()){
-			list.push_back(n);
-		}
-		
-		// Remove and end with all nodes that will never be modified
-		if(n->size() > factor){
-			while(list.front().get() != node.get()){
-				node_ptr n = list.front();
-				processSearchNodeEnd(n);
-				list.pop_front();
-			}
-		}
+		list.push_back(n);
 		
 		nodeChanged = erase_req(n, node, key, list);
 		
@@ -684,11 +684,20 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 
 template<class Key, class T>
 bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite, node_list& list)
-{
+{	
     // Process Node before search
     processSearchNodeStart(node);
 
     bool nodeChanged = false;
+    
+    // Remove and end with all nodes from list that will never be modified
+	if(node->size() < factor*2-1){
+		while(list.front().get() != node.get()){
+			node_ptr n = list.front();
+			processSearchNodeEnd(n);
+			list.pop_front();
+		}
+	}
 
     const Key& key = get_entry_key(item);
     if(is_leaf(node)){
@@ -704,24 +713,14 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 			nodeChanged = true;
 		}
 		node->update_positions(node);
+		list.pop_back();
     }
     else{
 		// Find next node
 		node_ptr n = node->find(key);
 		
-		// Add internal node to the path list
-		if(!n->is_leaf()){
-			list.push_back(n);
-		}
-		
-		// Remove and end with all nodes from list that will never be modified
-		if(n->size() < factor*2-1){
-			while(list.front().get() != node.get()){
-				node_ptr n = list.front();
-				processSearchNodeEnd(n);
-				list.pop_front();
-			}
-		}
+		// Add node to the path list
+		list.push_back(n);
 		
         nodeChanged = insert_req(node->find(key), node, item, ins, overwrite, list);
         
