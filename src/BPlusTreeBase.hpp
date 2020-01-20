@@ -1,7 +1,6 @@
 #ifndef BPLUSTREEBASE_H
 #define BPLUSTREEBASE_H
 
-#include <iostream>
 #include <atomic>
 #include <memory>
 #include <list>
@@ -13,7 +12,6 @@
 template <class Key, class T>
 class BPlusTreeBase
 {
-	
     public:
 		friend class BPlusTreeBaseIterator<Key, T>;
 
@@ -509,7 +507,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 		// Find next node
 		node_ptr n = node->find(key);
 		
-		// Add internal node to the path list
+		// Add node to the path list
 		list.push_back(n);
 		
 		nodeChanged = erase_req(n, node, key, list);
