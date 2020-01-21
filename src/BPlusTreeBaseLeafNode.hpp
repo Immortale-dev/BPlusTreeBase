@@ -340,6 +340,9 @@ typename BPlusTreeBaseLeafNode<Key, T>::childs_type_iterator BPlusTreeBaseLeafNo
 template<class Key, class T>
 void BPlusTreeBaseLeafNode<Key, T>::update_positions(node_ptr node)
 {
+	if(!childs){
+		return;
+	}
 	for(int i=0;i<childs_size();i++){
 		(*childs)[i]->pos = i;
 		(*childs)[i]->node = node;
