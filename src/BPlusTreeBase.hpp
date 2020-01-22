@@ -238,10 +238,10 @@ void BPlusTreeBase<Key,T>::clear_req(node_ptr node)
 	}
 	if(is_stem(node)){
 		node_ptr n = create_leaf_node();
-		processSearchNodeStart(n);
+		//processSearchNodeStart(n);
 		set_root(n);
-		processInsertNode(n);
-		processSearchNodeEnd(n);
+		//processInsertNode(n);
+		//processSearchNodeEnd(n);
 	}
 	processSearchNodeEnd(node);
 	if(!is_stem(node)){
@@ -493,6 +493,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 	}
 
     if(is_leaf(node)){
+		list.pop_back();
 		if(!node->exists(key)){
 			processSearchNodeEnd(node);
 			return false;
@@ -501,7 +502,6 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
         node->update_positions(node);
         v_count--;
         nodeChanged = true;
-        list.pop_back();
 	}
     else{
 		// Find next node
@@ -699,6 +699,7 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 
     const Key& key = get_entry_key(item);
     if(is_leaf(node)){
+		list.pop_back();
 		ins = node;
         if(!node->exists(key)){
             v_count++;
@@ -711,7 +712,6 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 			nodeChanged = true;
 		}
 		node->update_positions(node);
-		list.pop_back();
     }
     else{
 		// Find next node
