@@ -77,13 +77,13 @@ class BPlusTreeBase
         virtual void processDeleteNode(node_ptr& node);
         virtual void processIteratorNodeReserved(node_ptr& node);
         virtual void processIteratorNodeReleased(node_ptr& node);
-        virtual void processIteratorMoveStart(childs_item_ptr& item, int step);
-        virtual void processIteratorMoveEnd(childs_item_ptr& item, int step);
+        virtual void processIteratorMoveStart(childs_item_ptr item, int step);
+        virtual void processIteratorMoveEnd(childs_item_ptr item, int step);
         void release_entry_item(childs_item_ptr item);
         EntryItem_ptr create_entry_item(Key key, T val);
         
         node_ptr root;
-        node_ptr last;
+        childs_item_ptr last;
         node_ptr stem;
         std::atomic<long long int> v_count;
         const int factor;
@@ -121,6 +121,7 @@ BPlusTreeBase<Key,T>::~BPlusTreeBase()
         return;
     release_node(root);
     root = nullptr;
+    stem = nullptr;
 }
 
 template<class Key, class T>
@@ -238,10 +239,7 @@ void BPlusTreeBase<Key,T>::clear_req(node_ptr node)
 	}
 	if(is_stem(node)){
 		node_ptr n = create_leaf_node();
-		//processSearchNodeStart(n);
 		set_root(n);
-		//processInsertNode(n);
-		//processSearchNodeEnd(n);
 	}
 	processSearchNodeEnd(node);
 	if(!is_stem(node)){
@@ -266,7 +264,7 @@ typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::begin()
 template<class Key, class T>
 typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::end()
 {
-    return iterator(nullptr, this);
+    return iterator(last, this);
 }
 
 template<class Key, class T>
@@ -443,7 +441,7 @@ void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr& node)
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveStart(childs_item_ptr& item, int step)
+void BPlusTreeBase<Key, T>::processIteratorMoveStart(childs_item_ptr item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count++;
@@ -452,7 +450,7 @@ void BPlusTreeBase<Key, T>::processIteratorMoveStart(childs_item_ptr& item, int 
 }
 
 template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveEnd(childs_item_ptr& item, int step)
+void BPlusTreeBase<Key, T>::processIteratorMoveEnd(childs_item_ptr item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count--;
@@ -493,7 +491,9 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 	}
 
     if(is_leaf(node)){
+		// Remove current node from path list
 		list.pop_back();
+		
 		if(!node->exists(key)){
 			processSearchNodeEnd(node);
 			return false;
@@ -699,7 +699,9 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 
     const Key& key = get_entry_key(item);
     if(is_leaf(node)){
+		// Remove current node from path list
 		list.pop_back();
+		
 		ins = node;
         if(!node->exists(key)){
             v_count++;
