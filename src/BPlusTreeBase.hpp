@@ -749,39 +749,88 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         nnode = is_leaf(node) ? create_leaf_node() : create_internal_node();
         processSearchNodeStart(nnode);
         
-        // Split node to nnode
-        Key ins_key = node->split(nnode);
+        // Create new parent
+        if(is_root(node)){
+			parent = create_internal_node();
+			parent->add_nodes(0, node);
+			processSearchNodeStart(parent);
+		}
+		// Split node to nnode
+        Key ins_key = node->split(nnode, parent);
         
         // Update inserted node ref if necessary
         if(is_leaf(node) && !node->exists(key)){
 			ins = nnode;
 		}
-		
-		// Update dependencies of newly created node
-		if(is_leaf(node)){
-			node_ptr nextLeaf = node->next_leaf();
-			nnode->set_next_leaf(nextLeaf);
-			nnode->set_prev_leaf(node);
-		}
-		// Process newly created node
-        processInsertNode(nnode);
-        // Process Node after search
-        processSearchNodeEnd(nnode);
         
         // Update leaf nodes dependencies
         if(is_leaf(node)){
-			node_ptr nextLeaf = node->next_leaf();
-			//nnode->set_next_leaf(nextLeaf);
-			node->set_next_leaf(nnode);
-			//nnode->set_prev_leaf(node);
-			if(nextLeaf){
+			if(parent->first_child().get() == node.get()){
+				// New node is next to current node
+				
+				// Update dependencies of newly created node
+				if(is_leaf(node)){
+					node_ptr nextLeaf = node->next_leaf();
+					nnode->set_next_leaf(nextLeaf);
+					nnode->set_prev_leaf(node);
+				}
+				// Process newly created node
+				processInsertNode(nnode);
+				// Process Node after search
+				processSearchNodeEnd(nnode);
+				
 				// Set next to newly created node prev leaf
-				processSearchNodeStart(nextLeaf);
-				nextLeaf->set_prev_leaf(nnode);
-				processInsertNode(nextLeaf);
-				processSearchNodeEnd(nextLeaf);
+				node_ptr nextLeaf = node->next_leaf();
+				node->set_next_leaf(nnode);
+				if(nextLeaf){
+					processSearchNodeStart(nextLeaf);
+					nextLeaf->set_prev_leaf(nnode);
+					processInsertNode(nextLeaf);
+					processSearchNodeEnd(nextLeaf);
+				}
+			}
+			else{
+				// New node is before the current nide
+				
+				// Update dependencies of newly created node
+				if(is_leaf(node)){
+					node_ptr prevLeaf = node->prev_leaf();
+					nnode->set_prev_leaf(prevLeaf);
+					nnode->set_next_leaf(node);
+				}
+				// Process newly created node
+				processInsertNode(nnode);
+				// Process Node after search
+				processSearchNodeEnd(nnode);
+				
+				// Set prev from newly created node next leaf
+				node_ptr prevLeaf = node->prev_leaf();
+				node->set_prev_leaf(nnode);
+				if(prevLeaf){
+					processSearchNodeStart(prevLeaf);
+					prevLeaf->set_next_leaf(nnode);
+					processInsertNode(prevLeaf);
+					processSearchNodeEnd(prevLeaf);
+				}
 			}
 		}
+		
+		// Process updated Node before parent
+		processInsertNode(node);
+		// Process Node after search before parent
+		processSearchNodeEnd(node);
+		
+		if(is_root(node)){
+			set_root(parent);
+			// Process updated Node
+            processInsertNode(parent);
+            // Process Node after search
+            processSearchNodeEnd(parent);
+		}
+		
+		return true;
+		
+		/*
 
         if(is_root(node)){
 			// Process updated Node before parent
@@ -794,8 +843,8 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
             processSearchNodeStart(parent);
             // Add items to parent node
             parent->add_keys(0, ins_key);
-            parent->add_nodes(0, node);
-            parent->add_nodes(1, nnode);
+            parent->add_nodes(0, nnode);
+            parent->add_nodes(1, node);
             set_root(parent);
             // Process updated Node
             processInsertNode(parent);
@@ -809,8 +858,9 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
             int index = parent->get_index(key);
             // Add items to parent node
             parent->add_keys(index, ins_key);
-            parent->add_nodes(index+1, nnode);
+            parent->add_nodes(index, nnode);
         }
+		*/
     }
 
     if(nodeChanged){

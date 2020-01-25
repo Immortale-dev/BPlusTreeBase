@@ -214,14 +214,34 @@ typename BPlusTreeBaseLeafNode<Key, T>::child_item_type_ptr BPlusTreeBaseLeafNod
 }
 
 template<class Key, class T>
-Key BPlusTreeBaseLeafNode<Key, T>::split(node_ptr node)
+Key BPlusTreeBaseLeafNode<Key, T>::split(node_ptr node, node_ptr parent)
 {
-    childs_type_iterator c_start = childs_iterator()+childs_size()/2;
-    childs_type_iterator c_end = childs_iterator_end();
+	string ret;
+	childs_type_iterator c_start, c_end;
+	int index = parent->get_index(this);
+	if(parent->first_child().get() == this){
+		c_start = childs_iterator() + childs_size()/2;
+		c_end = childs_iterator_end();
+		ret = get_key(node->first_child());
+		// Add items to parent node
+		parent->add_nodes(index+1, node);
+	}
+	else{
+		c_start = childs_iterator();
+		c_end = childs_iterator() + childs_size()/2;
+		ret = get_key(first_child());
+		// Add items to parent node
+		parent->add_nodes(index, node);
+	}
+	parent->add_keys(index, ins_key);
     node->insert(0, c_start, c_end);
     erase(c_start, c_end);
     node->update_positions(node);
-    return get_key(node->first_child());
+    // Custom update pos
+    for(int i=0;i<childs_size();i++){
+		(*childs)[i]->pos = i;
+	}
+    return ret;
 }
 
 template<class Key, class T>
