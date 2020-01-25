@@ -742,7 +742,6 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
     node_ptr nnode = nullptr;
 
     if(node->size() >= factor*2){
-
         nodeChanged = true;
 
         // Create new node to split to
@@ -752,11 +751,12 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         // Create new parent
         if(is_root(node)){
 			parent = create_internal_node();
-			parent->add_nodes(0, node);
 			processSearchNodeStart(parent);
+			parent->add_nodes(0, node);
 		}
+		
 		// Split node to nnode
-        Key ins_key = node->split(nnode, parent);
+        node->split(nnode, parent);
         
         // Update inserted node ref if necessary
         if(is_leaf(node) && !node->exists(key)){
@@ -765,7 +765,7 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         
         // Update leaf nodes dependencies
         if(is_leaf(node)){
-			if(parent->first_child().get() == node.get()){
+			if(parent->first_child_node().get() == node.get()){
 				// New node is next to current node
 				
 				// Update dependencies of newly created node
@@ -814,6 +814,12 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 				}
 			}
 		}
+		else{
+			// Process newly created node
+			processInsertNode(nnode);
+			// Process Node after search
+			processSearchNodeEnd(nnode);
+		}
 		
 		// Process updated Node before parent
 		processInsertNode(node);
@@ -829,38 +835,6 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 		}
 		
 		return true;
-		
-		/*
-
-        if(is_root(node)){
-			// Process updated Node before parent
-			processInsertNode(node);
-			// Process Node after search before parent
-			processSearchNodeEnd(node);
-			
-            // Create new root node
-            parent = create_internal_node();
-            processSearchNodeStart(parent);
-            // Add items to parent node
-            parent->add_keys(0, ins_key);
-            parent->add_nodes(0, nnode);
-            parent->add_nodes(1, node);
-            set_root(parent);
-            // Process updated Node
-            processInsertNode(parent);
-            // Process Node after search
-            processSearchNodeEnd(parent);
-            
-            return true;
-        }
-        else{
-            // get index of node
-            int index = parent->get_index(key);
-            // Add items to parent node
-            parent->add_keys(index, ins_key);
-            parent->add_nodes(index, nnode);
-        }
-		*/
     }
 
     if(nodeChanged){

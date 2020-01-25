@@ -37,7 +37,7 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T>
         void shift_right(node_ptr parent);
         void join_left(node_ptr parent);
         void join_right(node_ptr parent);
-        Key split(node_ptr node);
+        void split(node_ptr node, node_ptr parent);
         node_ptr get_node(int index);
         int size();
         int keys_size();
@@ -262,7 +262,7 @@ void BPlusTreeBaseInternalNode<Key, T>::join_right(node_ptr parent)
 }
 
 template<class Key, class T>
-Key BPlusTreeBaseInternalNode<Key, T>::split(node_ptr node, node_ptr parent)
+void BPlusTreeBaseInternalNode<Key, T>::split(node_ptr node, node_ptr parent)
 {
     // Get iterators to move to new node
     keys_type_iterator kstart = keys_iterator();
@@ -283,10 +283,8 @@ Key BPlusTreeBaseInternalNode<Key, T>::split(node_ptr node, node_ptr parent)
     
     // Insert to parent
     int index = parent->get_index(this);
-    parent->add_keys(index, ins_key);
+    parent->add_keys(index, ret);
     parent->add_nodes(index, node);
-
-    return ret;
 }
 
 template<class Key, class T>

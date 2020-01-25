@@ -41,7 +41,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T>
         child_item_type_ptr get(int index);
         child_item_type_ptr first_child();
         child_item_type_ptr last_child();
-        Key split(node_ptr node);
+        void split(node_ptr node, node_ptr parent);
         void shift_left(node_ptr parent);
         void shift_right(node_ptr parent);
         void join_left(node_ptr parent);
@@ -214,34 +214,42 @@ typename BPlusTreeBaseLeafNode<Key, T>::child_item_type_ptr BPlusTreeBaseLeafNod
 }
 
 template<class Key, class T>
-Key BPlusTreeBaseLeafNode<Key, T>::split(node_ptr node, node_ptr parent)
+void BPlusTreeBaseLeafNode<Key, T>::split(node_ptr node, node_ptr parent)
 {
-	string ret;
+	Key ret;
 	childs_type_iterator c_start, c_end;
 	int index = parent->get_index(this);
-	if(parent->first_child().get() == this){
+	bool nextIns = false;
+	if(parent->first_child_node().get() == this){
 		c_start = childs_iterator() + childs_size()/2;
 		c_end = childs_iterator_end();
-		ret = get_key(node->first_child());
 		// Add items to parent node
 		parent->add_nodes(index+1, node);
+		nextIns = true;
 	}
 	else{
 		c_start = childs_iterator();
 		c_end = childs_iterator() + childs_size()/2;
-		ret = get_key(first_child());
 		// Add items to parent node
 		parent->add_nodes(index, node);
 	}
-	parent->add_keys(index, ins_key);
-    node->insert(0, c_start, c_end);
+	
+	node->insert(0, c_start, c_end);
     erase(c_start, c_end);
+	
+	if(nextIns){
+		ret = get_key(node->first_child());
+	}
+	else{
+		ret = get_key(first_child());
+	}
+    
+	parent->add_keys(index, ret);
     node->update_positions(node);
     // Custom update pos
     for(int i=0;i<childs_size();i++){
 		(*childs)[i]->pos = i;
 	}
-    return ret;
 }
 
 template<class Key, class T>
