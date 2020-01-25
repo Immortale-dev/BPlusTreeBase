@@ -622,17 +622,43 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     }
 
     node_ptr joinNode = nodeRight ? nodeRight : nodeLeft;
-
+    
+    bool join_r;
+    bool swapped = false;
+    
     if(nodeRight){
+		join_r = true;
+		if(parent->last_child_node().get() == nodeRight.get()){
+			swap(node, nodeRight);
+			joinNode = nodeRight;
+			swapped = true;
+			join_r = false;
+		}
+	}
+	else{
+		join_r = false;
+		if(parent->first_child_node().get() == nodeLeft.get()){
+			swap(node, nodeLeft);
+			joinNode = nodeLeft;
+			swapped = true;
+			join_r = true;
+		}
+	}
+
+    if(join_r){
         node->join_right(parent);
         if(is_leaf(node)){
-			node_ptr nextLeaf = joinNode->next_leaf();
+			node_ptr nextLeaf = swapped ? nodeRight : joinNode->next_leaf();
 			if(nextLeaf){
 				// Update next to right node prev leaf
-				processSearchNodeStart(nextLeaf);
+				if(!swapped){
+					processSearchNodeStart(nextLeaf);
+				}
 				nextLeaf->set_prev_leaf(node);
 				processInsertNode(nextLeaf);
-				processSearchNodeEnd(nextLeaf);
+				if(!swapped){
+					processSearchNodeEnd(nextLeaf);
+				}
 			}
 			node->set_next_leaf(nextLeaf);
 		}
@@ -640,13 +666,17 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     else{
         node->join_left(parent);
         if(is_leaf(node)){
-			node_ptr prevLeaf = joinNode->prev_leaf();
+			node_ptr prevLeaf = swapped ? nodeLeft : joinNode->prev_leaf();
 			if(prevLeaf){
 				// Update prev to left node next leaf
-				processSearchNodeStart(prevLeaf);
+				if(!swapped){
+					processSearchNodeStart(prevLeaf);
+				}
 				prevLeaf->set_next_leaf(node);
 				processInsertNode(prevLeaf);
-				processSearchNodeEnd(prevLeaf);
+				if(!swapped){
+					processSearchNodeEnd(prevLeaf);
+				}
 			}
 			node->set_prev_leaf(prevLeaf);
 		}
