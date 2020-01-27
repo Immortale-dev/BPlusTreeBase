@@ -483,7 +483,9 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     
     // Remove and end with all nodes that will never be modified
 	if(node->size() > factor){
-		while(list.front().get() != node.get()){
+		// !!! Fix race condition for the FOREST module. Time boxed change !!!
+		node_ptr comp = node->is_leaf() ? parent : node;
+		while(list.front().get() != comp.get()){
 			node_ptr n = list.front();
 			processSearchNodeEnd(n);
 			list.pop_front();
@@ -720,7 +722,9 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
     
     // Remove and end with all nodes from list that will never be modified
 	if(node->size() < factor*2-1){
-		while(list.front().get() != node.get()){
+		// !!! Fix race condition for the FOREST module. Time boxed change !!!
+		node_ptr comp = node->is_leaf() ? parent : node;
+		while(list.front().get() != comp.get()){
 			node_ptr n = list.front();
 			processSearchNodeEnd(n);
 			list.pop_front();
@@ -772,6 +776,11 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
     node_ptr nnode = nullptr;
 
     if(node->size() >= factor*2){
+		
+		// Ensure that parent node is locked
+		assert(!list.empty());
+		
+		// Parent node will be changed
         nodeChanged = true;
 
         // Create new node to split to
@@ -799,19 +808,19 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 				// New node is next to current node
 				
 				// Update dependencies of newly created node
-				if(is_leaf(node)){
-					node_ptr nextLeaf = node->next_leaf();
-					nnode->set_next_leaf(nextLeaf);
-					nnode->set_prev_leaf(node);
-				}
+				node_ptr nextLeaf = node->next_leaf();
+				nnode->set_next_leaf(nextLeaf);
+				nnode->set_prev_leaf(node);
+
 				// Process newly created node
 				processInsertNode(nnode);
 				// Process Node after search
 				processSearchNodeEnd(nnode);
 				
 				// Set next to newly created node prev leaf
-				node_ptr nextLeaf = node->next_leaf();
 				node->set_next_leaf(nnode);
+				
+				// Update next leaf
 				if(nextLeaf){
 					processSearchNodeStart(nextLeaf);
 					nextLeaf->set_prev_leaf(nnode);
@@ -823,19 +832,19 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 				// New node is before the current nide
 				
 				// Update dependencies of newly created node
-				if(is_leaf(node)){
-					node_ptr prevLeaf = node->prev_leaf();
-					nnode->set_prev_leaf(prevLeaf);
-					nnode->set_next_leaf(node);
-				}
+				node_ptr prevLeaf = node->prev_leaf();
+				nnode->set_prev_leaf(prevLeaf);
+				nnode->set_next_leaf(node);
+
 				// Process newly created node
 				processInsertNode(nnode);
 				// Process Node after search
 				processSearchNodeEnd(nnode);
 				
 				// Set prev from newly created node next leaf
-				node_ptr prevLeaf = node->prev_leaf();
 				node->set_prev_leaf(nnode);
+				
+				// Update prev node
 				if(prevLeaf){
 					processSearchNodeStart(prevLeaf);
 					prevLeaf->set_next_leaf(nnode);

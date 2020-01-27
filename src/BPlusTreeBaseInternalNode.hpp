@@ -319,7 +319,7 @@ int BPlusTreeBaseInternalNode<Key, T>::get_index(Node* node)
         if((*child_nodes)[i].get() == node)
             return i;
     }
-    return 0;
+    return sz;
 }
 
 template<class Key, class T>
