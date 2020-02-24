@@ -7,7 +7,7 @@
 #include <memory>
 
 #ifdef DEBUG
-int active_nodes_count = 0;
+static int active_nodes_count = 0;
 #endif
 
 template<class Key, class T>

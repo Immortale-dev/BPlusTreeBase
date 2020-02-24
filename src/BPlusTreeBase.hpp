@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <memory>
+#include <cassert>
 #include <list>
 #include "BPlusTreeBaseNode.hpp"
 #include "BPlusTreeBaseInternalNode.hpp"
@@ -484,7 +485,8 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     // Remove and end with all nodes that will never be modified
 	if(node->size() > factor){
 		// !!! Fix race condition for the FOREST module. Time boxed change !!!
-		node_ptr comp = node->is_leaf() ? parent : node;
+		//node_ptr comp = node->is_leaf() ? parent : node;
+		node_ptr comp = node;
 		while(list.front().get() != comp.get()){
 			node_ptr n = list.front();
 			processSearchNodeEnd(n);
@@ -723,7 +725,8 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
     // Remove and end with all nodes from list that will never be modified
 	if(node->size() < factor*2-1){
 		// !!! Fix race condition for the FOREST module. Time boxed change !!!
-		node_ptr comp = node->is_leaf() ? parent : node;
+		// node_ptr comp = node->is_leaf() ? parent : node;
+		node_ptr comp = node;
 		while(list.front().get() != comp.get()){
 			node_ptr n = list.front();
 			processSearchNodeEnd(n);
