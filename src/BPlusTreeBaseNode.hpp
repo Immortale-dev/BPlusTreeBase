@@ -10,7 +10,7 @@
 static int active_nodes_count = 0;
 #endif
 
-template<class Key, class T>
+template<class Key, class T, class D>
 class BPlusTreeBaseNode
 {	
 	public:
@@ -26,6 +26,7 @@ class BPlusTreeBaseNode
 		typedef typename keys_type::iterator keys_type_iterator;
 		typedef std::shared_ptr<child_item_type> child_item_type_ptr;
 		typedef std::vector<child_item_type_ptr> child_type;
+		//typedef std::function<int(const Key& left, const Key& right)> compare_t;
 		
 		struct child_item_type{
 			int pos;
@@ -99,20 +100,21 @@ class BPlusTreeBaseNode
         virtual node_ptr prev_leaf() { return nullptr; };
         virtual void update_positions(node_ptr node) {};
         
-        std::shared_ptr<void> data = nullptr;
+        D data;
         std::mutex mtx;
+        //compare_t compare_fn;
 };
 
-template<class Key, class T>
-BPlusTreeBaseNode<Key,T>::BPlusTreeBaseNode()
+template<class Key, class T, class D>
+BPlusTreeBaseNode<Key,T,D>::BPlusTreeBaseNode()
 {
 	#ifdef DEBUG
 	active_nodes_count++;
 	#endif
 }
 
-template<class Key, class T>
-BPlusTreeBaseNode<Key,T>::~BPlusTreeBaseNode()
+template<class Key, class T, class D>
+BPlusTreeBaseNode<Key,T,D>::~BPlusTreeBaseNode()
 {
 	#ifdef DEBUG
 	active_nodes_count--;

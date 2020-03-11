@@ -5,21 +5,22 @@
 #include <memory>
 #include <cassert>
 #include <list>
+#include <functional>
 #include "BPlusTreeBaseNode.hpp"
 #include "BPlusTreeBaseInternalNode.hpp"
 #include "BPlusTreeBaseLeafNode.hpp"
 #include "BPlusTreeBaseIterator.hpp"
 
-template <class Key, class T>
+template <class Key, class T, class D = void*>
 class BPlusTreeBase
 {
     public:
-		friend class BPlusTreeBaseIterator<Key, T>;
+		friend class BPlusTreeBaseIterator<Key, T, D>;
 
-		typedef BPlusTreeBaseNode<Key, T> Node;
-		typedef BPlusTreeBaseIterator<Key, T> iterator;
-		typedef BPlusTreeBaseInternalNode<Key, T> InternalNode;
-		typedef BPlusTreeBaseLeafNode<Key, T> LeafNode;
+		typedef BPlusTreeBaseNode<Key, T, D> Node;
+		typedef BPlusTreeBaseIterator<Key, T, D> iterator;
+		typedef BPlusTreeBaseInternalNode<Key, T, D> InternalNode;
+		typedef BPlusTreeBaseLeafNode<Key, T, D> LeafNode;
 		typedef std::pair<const Key, T> EntryItem;
 		typedef std::shared_ptr<EntryItem> EntryItem_ptr;
 		typedef std::pair<Key, T> value_type;
@@ -28,9 +29,11 @@ class BPlusTreeBase
 		typedef typename Node::child_item_type_ptr childs_item_ptr;
 		typedef BPlusTreeBase<Key,T> self_type;
 		typedef std::list<node_ptr> node_list;
+		typedef std::function<int(const Key& left, const Key& right)> compare_t;
 		
         BPlusTreeBase(const self_type& obj);
         BPlusTreeBase(int factor);
+        //BPlusTreeBase(int factor, compare_t fn);
         virtual ~BPlusTreeBase();
         iterator find(Key key);
         void erase(Key key);
@@ -41,10 +44,13 @@ class BPlusTreeBase
         iterator end();
         long long int size();
         T operator[](Key key);
+        
+        enum class PROCESS_TYPE{ READ, WRITE };
     
     // DEBUG METHODS
 	#ifdef DEBUG
 		std::atomic<int> mutex_count;
+		std::atomic<int> item_reserve_count;
 		int reserved_count = 0;
 		int iterator_move_count = 0;
 		void print_tree();
@@ -72,14 +78,18 @@ class BPlusTreeBase
         bool is_leaf(node_ptr node);
         void set_root(node_ptr node);
         void release_node(node_ptr node);
-        virtual void processSearchNodeStart(node_ptr& node);
-        virtual void processSearchNodeEnd(node_ptr& node);
+        void init();
+        virtual void processSearchNodeStart(node_ptr& node, PROCESS_TYPE type);
+        virtual void processSearchNodeEnd(node_ptr& node, PROCESS_TYPE type);
         virtual void processInsertNode(node_ptr& node);
         virtual void processDeleteNode(node_ptr& node);
         virtual void processIteratorNodeReserved(node_ptr& node);
         virtual void processIteratorNodeReleased(node_ptr& node);
         virtual void processIteratorMoveStart(childs_item_ptr item, int step);
         virtual void processIteratorMoveEnd(childs_item_ptr item, int step);
+		virtual void processItemReserve(childs_item_ptr item, PROCESS_TYPE type);
+		virtual void processItemRelease(childs_item_ptr item, PROCESS_TYPE type);
+		
         void release_entry_item(childs_item_ptr item);
         EntryItem_ptr create_entry_item(Key key, T val);
         
@@ -88,10 +98,11 @@ class BPlusTreeBase
         node_ptr stem;
         std::atomic<long long int> v_count;
         const int factor;
+        compare_t compare_fn = [](const Key& left, const Key& right)->int{if (left == right) return 0; return left < right ? -1 : 1;};
 };
 
-template<class Key, class T>
-BPlusTreeBase<Key,T>::BPlusTreeBase(const self_type& obj) : factor(obj.factor)
+template<class Key, class T, class D>
+BPlusTreeBase<Key, T, D>::BPlusTreeBase(const self_type& obj) : factor(obj.factor)
 {
 	root = obj.root;
 	last = obj.last;
@@ -99,11 +110,18 @@ BPlusTreeBase<Key,T>::BPlusTreeBase(const self_type& obj) : factor(obj.factor)
 	v_count = obj.v_count.load();
 	#ifdef DEBUG
 	mutex_count = obj.mutex_count.load();
+	item_reserve_count = obj.item_reserve_count.load();
 	#endif
 }
 
-template<class Key, class T>
-BPlusTreeBase<Key,T>::BPlusTreeBase(int f) : factor(f)
+template<class Key, class T, class D>
+BPlusTreeBase<Key, T, D>::BPlusTreeBase(int f) : factor(f)
+{
+	init();
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::init()
 {
 	stem = create_internal_node();
     node_ptr node = create_leaf_node();
@@ -112,11 +130,12 @@ BPlusTreeBase<Key,T>::BPlusTreeBase(int f) : factor(f)
     v_count = 0;
     #ifdef DEBUG
     mutex_count = 0;
+    item_reserve_count = 0;
     #endif
 }
 
-template<class Key, class T>
-BPlusTreeBase<Key,T>::~BPlusTreeBase()
+template<class Key, class T, class D>
+BPlusTreeBase<Key, T, D>::~BPlusTreeBase()
 {
     if(!get_root())
         return;
@@ -125,52 +144,55 @@ BPlusTreeBase<Key,T>::~BPlusTreeBase()
     stem = nullptr;
 }
 
-template<class Key, class T>
-const Key BPlusTreeBase<Key, T>::get_entry_key(EntryItem_ptr item)
+template<class Key, class T, class D>
+const Key BPlusTreeBase<Key, T, D>::get_entry_key(EntryItem_ptr item)
 {
     return item->first;
 }
 
-template<class Key, class T>
-long long int BPlusTreeBase<Key,T>::size()
+template<class Key, class T, class D>
+long long int BPlusTreeBase<Key, T, D>::size()
 {
     return v_count.load();
 }
 
-template<class Key, class T>
-T BPlusTreeBase<Key, T>::operator[](Key key)
+template<class Key, class T, class D>
+T BPlusTreeBase<Key, T, D>::operator[](Key key)
 {
 	return find(key)->second;
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key, T>::iterator BPlusTreeBase<Key,T>::find(Key k)
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::find(Key k)
 {
 	const Key key = k;
     node_ptr node = get_stem();
-    processSearchNodeStart(node);
+    processSearchNodeStart(node, PROCESS_TYPE::READ);
     while(true){
         if(!node){
-			processSearchNodeEnd(node);
+			processSearchNodeEnd(node, PROCESS_TYPE::READ);
 			return end();
 		}
         if(node->is_leaf()){
 			iterator it = end();
-            if(node->exists(key))
-                it = iterator(node->get(node->get_index(key)), this);
-			processSearchNodeEnd(node);
+            if(node->exists(key)){
+				int index = node->get_index(key);
+				processItemReserve(node->get(index), PROCESS_TYPE::READ);
+                it = iterator(node->get(index), this);
+			}
+			processSearchNodeEnd(node, PROCESS_TYPE::READ);
             return it;
         }
         node_ptr tnode = node->find(key);
-        processSearchNodeStart(tnode);
-        processSearchNodeEnd(node);
+        processSearchNodeStart(tnode, PROCESS_TYPE::READ);
+        processSearchNodeEnd(node, PROCESS_TYPE::READ);
         node = tnode;
     }
     return end();
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key,T>::insert(value_type item, bool overwrite)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::insert(value_type item, bool overwrite)
 {
     EntryItem_ptr itm = create_entry_item(item.first, item.second);
     //const Key& key = get_entry_key(itm);
@@ -190,8 +212,8 @@ void BPlusTreeBase<Key,T>::insert(value_type item, bool overwrite)
     //return find(key);
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key,T>::erase(Key item)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::erase(Key item)
 {
     node_ptr node = get_stem();
     node_list list;
@@ -199,26 +221,26 @@ void BPlusTreeBase<Key,T>::erase(Key item)
     erase_req(node, nullptr, item, list);
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key,T>::erase(iterator it)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::erase(iterator it)
 {
     if(it == end())
         return;
     erase(it.get_key());
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key,T>::clear()
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::clear()
 {
 	node_ptr node = get_stem();
 	clear_req(node);
 	v_count = 0;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key,T>::clear_req(node_ptr node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::clear_req(node_ptr node)
 {
-	processSearchNodeStart(node);
+	processSearchNodeStart(node, PROCESS_TYPE::WRITE);
 	if(node->is_leaf()){
 		// Delete node if leaf
 		processDeleteNode(node);
@@ -232,119 +254,136 @@ void BPlusTreeBase<Key,T>::clear_req(node_ptr node)
 			clear_req(n);
 		}
 		// Delete internal node
+		node->get_keys()->resize(0);
+		node->get_nodes()->resize(0);
 		if(!is_stem(node)){
 			processDeleteNode(node);
 		}
-		node->get_keys()->resize(0);
-		node->get_nodes()->resize(0);
 	}
 	if(is_stem(node)){
 		node_ptr n = create_leaf_node();
 		set_root(n);
 	}
-	processSearchNodeEnd(node);
+	processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 	if(!is_stem(node)){
 		release_node(node);
 	}
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::begin()
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::begin()
 {
     if(!size())
         return end();
     node_ptr node = min_node();
     
-    processSearchNodeStart(node);
+    processSearchNodeStart(node, PROCESS_TYPE::READ);
     iterator it(node->first_child(),this);
-    processSearchNodeEnd(node);
+    processSearchNodeEnd(node, PROCESS_TYPE::READ);
     
     return it;
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::iterator BPlusTreeBase<Key,T>::end()
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::end()
 {
     return iterator(last, this);
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key,T>::min_node()
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::min_node()
 {
-    return min_node(get_stem());
+	node_ptr node = get_stem();
+	
+	// process node before search
+	processSearchNodeStart(node, PROCESS_TYPE::READ);
+	
+    return min_node(node);
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key,T>::min_node(node_ptr node)
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::min_node(node_ptr node)
 {
-    // process node before search
-    processSearchNodeStart(node);
-
     if(is_leaf(node)){
+		// Reserve first item
+		if(node->size()){
+			processItemReserve(node->first_child(), PROCESS_TYPE::READ);
+		}
 		// process node after search
-		processSearchNodeEnd(node);
+		processSearchNodeEnd(node, PROCESS_TYPE::READ);
         return node;
 	}
 	
 	// Get left most node
     node_ptr nnode = node->first_child_node();
     
+    // process node before search
+    processSearchNodeStart(nnode, PROCESS_TYPE::READ);
+    
     // process node after search
-    processSearchNodeEnd(node);
+    processSearchNodeEnd(node, PROCESS_TYPE::READ);
     
     // recoursively search for min leaf node
     return min_node(nnode);
 }
 
-template<class Key, class T>
-bool BPlusTreeBase<Key,T>::is_root(node_ptr node)
+template<class Key, class T, class D>
+bool BPlusTreeBase<Key, T, D>::is_root(node_ptr node)
 {
     return root.get() == node.get();
 }
 
-template<class Key, class T>
-bool BPlusTreeBase<Key,T>::is_stem(node_ptr node)
+template<class Key, class T, class D>
+bool BPlusTreeBase<Key, T, D>::is_stem(node_ptr node)
 {
     return stem.get() == node.get();
 }
 
-template<class Key, class T>
-bool BPlusTreeBase<Key,T>::is_leaf(node_ptr node)
+template<class Key, class T, class D>
+bool BPlusTreeBase<Key, T, D>::is_leaf(node_ptr node)
 {
     return node->is_leaf();
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key,T>::max_node()
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::max_node()
 {
-    return max_node(get_stem());
+	node_ptr node = get_stem();
+	
+	// process node before search
+	processSearchNodeStart(node, PROCESS_TYPE::READ);
+	
+    return max_node(node);
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key,T>::max_node(node_ptr node)
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::max_node(node_ptr node)
 {
-
-    // process node before search
-    processSearchNodeStart(node);
-
     if(is_leaf(node)){
+		// Reserve last item
+		if(node->size()){
+			processItemReserve(node->last_child(), PROCESS_TYPE::READ);
+		}
 		// process node after search
-		processSearchNodeEnd(node);
+		processSearchNodeEnd(node, PROCESS_TYPE::READ);
         return node;
 	}
 	
 	// Get right most node
 	node_ptr nnode = node->last_child_node();
+	
+	// Process next node before releasing previous one
+	processSearchNodeStart(nnode, PROCESS_TYPE::READ);
 
     // process node after search
-    processSearchNodeEnd(node);
+    processSearchNodeEnd(node, PROCESS_TYPE::READ);
     
     // recoursively search for max leaf node
     return max_node(nnode);
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::set_root(node_ptr node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::set_root(node_ptr node)
 {
     root = node;
     if(stem->nodes_size()){
@@ -353,22 +392,22 @@ void BPlusTreeBase<Key, T>::set_root(node_ptr node)
 	stem->add_nodes(0,node);
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key, T>::create_internal_node()
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::create_internal_node()
 {
     // TODO: replace with allocator functions
     return node_ptr(new InternalNode());
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key, T>::create_leaf_node()
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::create_leaf_node()
 {
     // TODO: replace with allocator functions
     return node_ptr(new LeafNode());
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::release_node(node_ptr node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::release_node(node_ptr node)
 {
 	if(node->is_leaf()){
 		node->update_positions(nullptr);
@@ -379,20 +418,20 @@ void BPlusTreeBase<Key, T>::release_node(node_ptr node)
 }
 
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key, T>::get_root()
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::get_root()
 {
     return root;
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::node_ptr BPlusTreeBase<Key, T>::get_stem()
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::get_stem()
 {
     return stem;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::processSearchNodeStart(node_ptr& node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processSearchNodeStart(node_ptr& node, PROCESS_TYPE type)
 {
 	node->lock();
 	#ifdef DEBUG
@@ -401,8 +440,8 @@ void BPlusTreeBase<Key, T>::processSearchNodeStart(node_ptr& node)
     return;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::processSearchNodeEnd(node_ptr& node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processSearchNodeEnd(node_ptr& node, PROCESS_TYPE type)
 {
 	#ifdef DEBUG
 		mutex_count--;
@@ -411,20 +450,38 @@ void BPlusTreeBase<Key, T>::processSearchNodeEnd(node_ptr& node)
     return;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::processInsertNode(node_ptr& node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processItemReserve(childs_item_ptr item, PROCESS_TYPE type)
+{
+	#ifdef DEBUG
+		item_reserve_count++;
+	#endif
+    return;
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processItemRelease(childs_item_ptr item, PROCESS_TYPE type)
+{
+	#ifdef DEBUG
+		item_reserve_count--;
+	#endif
+    return;
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processInsertNode(node_ptr& node)
 {
     return;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::processDeleteNode(node_ptr& node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processDeleteNode(node_ptr& node)
 {
     return;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorNodeReserved(node_ptr& node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processIteratorNodeReserved(node_ptr& node)
 {
 	#ifdef DEBUG
 		reserved_count++;
@@ -432,8 +489,8 @@ void BPlusTreeBase<Key, T>::processIteratorNodeReserved(node_ptr& node)
     return;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr& node)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processIteratorNodeReleased(node_ptr& node)
 {
 	#ifdef DEBUG
 		reserved_count--;
@@ -441,8 +498,8 @@ void BPlusTreeBase<Key, T>::processIteratorNodeReleased(node_ptr& node)
     return;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveStart(childs_item_ptr item, int step)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processIteratorMoveStart(childs_item_ptr item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count++;
@@ -450,8 +507,8 @@ void BPlusTreeBase<Key, T>::processIteratorMoveStart(childs_item_ptr item, int s
 	return;
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::processIteratorMoveEnd(childs_item_ptr item, int step)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processIteratorMoveEnd(childs_item_ptr item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count--;
@@ -459,26 +516,26 @@ void BPlusTreeBase<Key, T>::processIteratorMoveEnd(childs_item_ptr item, int ste
 	return;
 }
 
-template<class Key, class T>
-typename BPlusTreeBase<Key,T>::EntryItem_ptr BPlusTreeBase<Key, T>::create_entry_item(Key key, T val)
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::EntryItem_ptr BPlusTreeBase<Key, T, D>::create_entry_item(Key key, T val)
 {
 	// TODO: replace with allocator functions
 	return EntryItem_ptr(new EntryItem(key, val));
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::release_entry_item(childs_item_ptr item)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::release_entry_item(childs_item_ptr item)
 {
 	// TODO replace with allocator functions
 	// No need to delete shared ptr
 	// delete item;
 }
 
-template<class Key, class T>
-bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& key, node_list& list)
+template<class Key, class T, class D>
+bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const Key& key, node_list& list)
 {
     // Process Node before search
-    processSearchNodeStart(node);
+    processSearchNodeStart(node, PROCESS_TYPE::WRITE);
 
     bool nodeChanged = false;
     
@@ -489,7 +546,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 		node_ptr comp = node;
 		while(list.front().get() != comp.get()){
 			node_ptr n = list.front();
-			processSearchNodeEnd(n);
+			processSearchNodeEnd(n, PROCESS_TYPE::WRITE);
 			list.pop_front();
 		}
 	}
@@ -499,10 +556,16 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 		list.pop_back();
 		
 		if(!node->exists(key)){
-			processSearchNodeEnd(node);
+			processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 			return false;
 		}
-        release_entry_item(node->erase(node->get_index(key)));
+		int index = node->get_index(key);
+		childs_item_ptr itm = node->get(index);
+		// Reserve Item
+		processItemReserve(itm, PROCESS_TYPE::WRITE);
+        release_entry_item(node->erase(index));
+        // Release Item
+        processItemRelease(itm, PROCESS_TYPE::WRITE);
         node->update_positions(node);
         v_count--;
         nodeChanged = true;
@@ -526,7 +589,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 		
 		if(is_stem(node)){
 			// It is stem. No any operations required
-			processSearchNodeEnd(node);
+			processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 			return false;
 		}
     }
@@ -538,7 +601,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
             node_ptr child = node->first_child_node();
             
             // Process as this node will became as root
-            processSearchNodeStart(child);
+            processSearchNodeStart(child, PROCESS_TYPE::WRITE);
 
             // Set new root
             set_root(child);
@@ -547,14 +610,14 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
             processInsertNode(child);
             
             // Leave new root node
-            processSearchNodeEnd(child);
+            processSearchNodeEnd(child, PROCESS_TYPE::WRITE);
 
             // Delete old root node
             node->remove_nodes(0);
             processDeleteNode(node);
             
             // Process node after search
-            processSearchNodeEnd(node);
+            processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
             
             // Clear node memory
             release_node(node);
@@ -568,7 +631,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
             processInsertNode(node);
         }
         // Process node after search
-        processSearchNodeEnd(node);
+        processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
         // Parent node was not changed
         return false;
     }
@@ -579,7 +642,7 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     nodeLeft = parent->find_prev(key);
     if(nodeLeft){
 		// Start working with left node
-		processSearchNodeStart(nodeLeft);
+		processSearchNodeStart(nodeLeft, PROCESS_TYPE::WRITE);
 	}
     if(nodeLeft && nodeLeft->size() > factor){
 
@@ -588,11 +651,11 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 
         // Process node
         processInsertNode(node);
-        processSearchNodeEnd(node);
+        processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 
         // Process updated node
         processInsertNode(nodeLeft);
-        processSearchNodeEnd(nodeLeft);
+        processSearchNodeEnd(nodeLeft, PROCESS_TYPE::WRITE);
 
         // Parent node changed
         return true;
@@ -601,13 +664,13 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     nodeRight = parent->find_next(key);
 	if(nodeRight){
 		// Start working with right node
-		processSearchNodeStart(nodeRight);
+		processSearchNodeStart(nodeRight, PROCESS_TYPE::WRITE);
 	}
     if(nodeRight && nodeRight->size() > factor){
 		
 		if(nodeLeft){
 			// process finish with leftNode
-			processSearchNodeEnd(nodeLeft);
+			processSearchNodeEnd(nodeLeft, PROCESS_TYPE::WRITE);
 		}
 
         // Shift nodes
@@ -615,11 +678,11 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 
         // Process node
         processInsertNode(node);
-        processSearchNodeEnd(node);
+        processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 
         // Process updated node
         processInsertNode(nodeRight);
-        processSearchNodeEnd(nodeRight);
+        processSearchNodeEnd(nodeRight, PROCESS_TYPE::WRITE);
 
         // Parent node changed
         return true;
@@ -656,12 +719,12 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 			if(nextLeaf){
 				// Update next to right node prev leaf
 				if(!swapped){
-					processSearchNodeStart(nextLeaf);
+					processSearchNodeStart(nextLeaf, PROCESS_TYPE::WRITE);
 				}
 				nextLeaf->set_prev_leaf(node);
 				processInsertNode(nextLeaf);
 				if(!swapped){
-					processSearchNodeEnd(nextLeaf);
+					processSearchNodeEnd(nextLeaf, PROCESS_TYPE::WRITE);
 				}
 			}
 			node->set_next_leaf(nextLeaf);
@@ -674,12 +737,12 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
 			if(prevLeaf){
 				// Update prev to left node next leaf
 				if(!swapped){
-					processSearchNodeStart(prevLeaf);
+					processSearchNodeStart(prevLeaf, PROCESS_TYPE::WRITE);
 				}
 				prevLeaf->set_next_leaf(node);
 				processInsertNode(prevLeaf);
 				if(!swapped){
-					processSearchNodeEnd(prevLeaf);
+					processSearchNodeEnd(prevLeaf, PROCESS_TYPE::WRITE);
 				}
 			}
 			node->set_prev_leaf(prevLeaf);
@@ -699,13 +762,13 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     
     // End processing with side nodes
 	if(nodeLeft){
-		processSearchNodeEnd(nodeLeft);
+		processSearchNodeEnd(nodeLeft, PROCESS_TYPE::WRITE);
 	}
 	if(nodeRight){
-		processSearchNodeEnd(nodeRight);
+		processSearchNodeEnd(nodeRight, PROCESS_TYPE::WRITE);
 	}
 	
-    processSearchNodeEnd(node);
+    processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 
     // Clear node memory
     release_node(joinNode);
@@ -714,11 +777,11 @@ bool BPlusTreeBase<Key,T>::erase_req(node_ptr node, node_ptr parent, const Key& 
     return true;
 }
 
-template<class Key, class T>
-bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite, node_list& list)
+template<class Key, class T, class D>
+bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite, node_list& list)
 {	
     // Process Node before search
-    processSearchNodeStart(node);
+    processSearchNodeStart(node, PROCESS_TYPE::WRITE);
 
     bool nodeChanged = false;
     
@@ -729,7 +792,7 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 		node_ptr comp = node;
 		while(list.front().get() != comp.get()){
 			node_ptr n = list.front();
-			processSearchNodeEnd(n);
+			processSearchNodeEnd(n, PROCESS_TYPE::WRITE);
 			list.pop_front();
 		}
 	}
@@ -747,7 +810,11 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         }
         else if(overwrite){
 			int index = node->get_index(key);
+			// Reserve Item
+			processItemReserve(node->get(index), PROCESS_TYPE::WRITE);
 			node->get(index)->item->second = item->second;
+			// Release Item
+			processItemRelease(node->get(index), PROCESS_TYPE::WRITE);
 			nodeChanged = true;
 		}
 		node->update_positions(node);
@@ -771,7 +838,7 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
         
         if(is_stem(node)){
 			// It is stem. No any operations required
-			processSearchNodeEnd(node);
+			processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 			return false;
 		}
     }
@@ -788,12 +855,12 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 
         // Create new node to split to
         nnode = is_leaf(node) ? create_leaf_node() : create_internal_node();
-        processSearchNodeStart(nnode);
+        processSearchNodeStart(nnode, PROCESS_TYPE::WRITE);
         
         // Create new parent
         if(is_root(node)){
 			parent = create_internal_node();
-			processSearchNodeStart(parent);
+			processSearchNodeStart(parent, PROCESS_TYPE::WRITE);
 			parent->add_nodes(0, node);
 		}
 		
@@ -818,17 +885,17 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 				// Process newly created node
 				processInsertNode(nnode);
 				// Process Node after search
-				processSearchNodeEnd(nnode);
+				processSearchNodeEnd(nnode, PROCESS_TYPE::WRITE);
 				
 				// Set next to newly created node prev leaf
 				node->set_next_leaf(nnode);
 				
 				// Update next leaf
 				if(nextLeaf){
-					processSearchNodeStart(nextLeaf);
+					processSearchNodeStart(nextLeaf, PROCESS_TYPE::WRITE);
 					nextLeaf->set_prev_leaf(nnode);
 					processInsertNode(nextLeaf);
-					processSearchNodeEnd(nextLeaf);
+					processSearchNodeEnd(nextLeaf, PROCESS_TYPE::WRITE);
 				}
 			}
 			else{
@@ -842,17 +909,17 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 				// Process newly created node
 				processInsertNode(nnode);
 				// Process Node after search
-				processSearchNodeEnd(nnode);
+				processSearchNodeEnd(nnode, PROCESS_TYPE::WRITE);
 				
 				// Set prev from newly created node next leaf
 				node->set_prev_leaf(nnode);
 				
 				// Update prev node
 				if(prevLeaf){
-					processSearchNodeStart(prevLeaf);
+					processSearchNodeStart(prevLeaf, PROCESS_TYPE::WRITE);
 					prevLeaf->set_next_leaf(nnode);
 					processInsertNode(prevLeaf);
-					processSearchNodeEnd(prevLeaf);
+					processSearchNodeEnd(prevLeaf, PROCESS_TYPE::WRITE);
 				}
 			}
 		}
@@ -860,20 +927,20 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
 			// Process newly created node
 			processInsertNode(nnode);
 			// Process Node after search
-			processSearchNodeEnd(nnode);
+			processSearchNodeEnd(nnode, PROCESS_TYPE::WRITE);
 		}
 		
 		// Process updated Node before parent
 		processInsertNode(node);
 		// Process Node after search before parent
-		processSearchNodeEnd(node);
+		processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 		
 		if(is_root(node)){
 			set_root(parent);
 			// Process updated Node
             processInsertNode(parent);
             // Process Node after search
-            processSearchNodeEnd(parent);
+            processSearchNodeEnd(parent, PROCESS_TYPE::WRITE);
 		}
 		
 		return true;
@@ -885,21 +952,21 @@ bool BPlusTreeBase<Key,T>::insert_req(node_ptr node, node_ptr parent, EntryItem_
     }
 
     // Process Node after search
-    processSearchNodeEnd(node);
+    processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 
     return !!nnode;
 
 }
 
 #ifdef DEBUG
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::print_tree()
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::print_tree()
 {
 	print_tree(get_root(), "");
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::print_tree(node_ptr node, std::string tabs)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::print_tree(node_ptr node, std::string tabs)
 {
 	using namespace std;
 	if(is_leaf(node)){
@@ -930,22 +997,22 @@ void BPlusTreeBase<Key, T>::print_tree(node_ptr node, std::string tabs)
 	cout << tabs << ")" << endl;
 }
 
-template<class Key, class T>
-std::vector<Key> BPlusTreeBase<Key, T>::bfs_result()
+template<class Key, class T, class D>
+std::vector<Key> BPlusTreeBase<Key, T, D>::bfs_result()
 {
 	std::vector<Key> res;
 	bfs_result(get_root(), res);
 	return res;
 }
 
-template<class Key, class T>
-int BPlusTreeBase<Key, T>::get_mutex_count()
+template<class Key, class T, class D>
+int BPlusTreeBase<Key, T, D>::get_mutex_count()
 {
 	return mutex_count.load();
 }
 
-template<class Key, class T>
-void BPlusTreeBase<Key, T>::bfs_result(node_ptr node, std::vector<Key>& res)
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::bfs_result(node_ptr node, std::vector<Key>& res)
 {
 	using namespace std;
 	

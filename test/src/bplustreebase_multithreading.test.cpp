@@ -1,7 +1,7 @@
 
 DESCRIBE("Multithreading insert", {
 	BPlusTreeBase<int,int> tree(10);
-	int tc = 10;
+	int tc = 100;
 	int cnt = 10000;
     
 	BEFORE_ALL({
@@ -70,6 +70,7 @@ DESCRIBE("Multithreading insert", {
 template<typename Key, typename T>
 class bpt_test : public BPlusTreeBase<Key,T> {
 	typedef typename BPlusTreeBase<Key,T>::node_ptr node_ptr;
+	typedef typename BPlusTreeBase<Key,T>::PROCESS_TYPE PROCESS_TYPE;
 	public:
 		bpt_test(int factor) : BPlusTreeBase<Key,T>(factor)
 		{
@@ -80,9 +81,9 @@ class bpt_test : public BPlusTreeBase<Key,T> {
 		{
 			this_thread::sleep_for(chrono::milliseconds(1));
 		}
-		void processSearchNodeStart(node_ptr& node)
+		void processSearchNodeStart(node_ptr& node, PROCESS_TYPE pt)
 		{
-			BPlusTreeBase<Key,T>::processSearchNodeStart(node);
+			BPlusTreeBase<Key,T>::processSearchNodeStart(node, pt);
 			this_thread::sleep_for(chrono::milliseconds(1));
 		}
 };

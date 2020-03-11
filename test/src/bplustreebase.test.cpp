@@ -475,7 +475,9 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				
 				IT("`iterator_move_count` should be equal to 0", {
 					EXPECT(base.iterator_move_count).toBe(0);
+					EXPECT(base.item_reserve_count.load()).toBe(0);
 					INFO_PRINT("iterator_move_count: " + to_string(base.iterator_move_count));
+					INFO_PRINT("item_reserve_count: " + to_string(base.item_reserve_count.load()));
 				});
 			});
 		});
@@ -603,6 +605,64 @@ DESCRIBE("Given tree with factor=50, Add 100`000 items to the tree and use clear
 				tree_cont.push_back(it.first);
 			}
 			EXPECT(tree_cont).toBeIterableEqual(check);
+		});
+	});
+});
+
+DESCRIBE("Given tree with 100 items", {
+	BPlusTreeBase<int,int> tree(5);
+	
+	BEFORE_ALL({		
+		for(int i=0;i<100;i++){
+			tree.insert(make_pair(i,i*2));
+		}
+	});
+	
+	DESCRIBE("Create begin iterator", {
+		BPlusTreeBase<int,int>::iterator it;
+		
+		BEFORE_ALL({
+			it = tree.begin();
+		});
+		
+		IT("`item_reserve_count` should be equal to 1", {
+			EXPECT(tree.item_reserve_count.load()).toBe(1);
+			INFO_PRINT("item_reserve_count: " + to_string(tree.item_reserve_count.load()));
+		});
+		
+		IT("After moving forward by 10 items `item_reserve_count` should be equal to 1", {
+			for(int i=0;i<10;i++){
+				++it;
+			}
+			EXPECT(tree.item_reserve_count.load()).toBe(1);
+			INFO_PRINT("item_reserve_count: " + to_string(tree.item_reserve_count.load()));
+		});
+		
+		DESCRIBE("Copy construct another iterator from first one", {
+			BPlusTreeBase<int,int>::iterator it2;
+			
+			BEFORE_ALL({
+				it2 = it;
+			});
+			
+			IT("`item_reserve_count` should be equal to 2", {
+				EXPECT(tree.item_reserve_count.load()).toBe(2);
+				INFO_PRINT("item_reserve_count: " + to_string(tree.item_reserve_count.load()));
+			});
+			
+			IT("After moving 11 items back `item_reserve_count` should be equal to 1", {
+				for(int i=0;i<11;i++){
+					it2--;
+				}
+				EXPECT(tree.item_reserve_count.load()).toBe(1);
+				INFO_PRINT("item_reserve_count: " + to_string(tree.item_reserve_count.load()));
+			});
+			
+			IT("Creating end iterator should not increase `item_reserve_count`", {
+				auto it3 = tree.end();
+				EXPECT(tree.item_reserve_count.load()).toBe(1);
+				INFO_PRINT("item_reserve_count: " + to_string(tree.item_reserve_count.load()));
+			});
 		});
 	});
 });
