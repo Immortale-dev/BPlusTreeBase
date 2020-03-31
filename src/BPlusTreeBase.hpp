@@ -90,7 +90,7 @@ class BPlusTreeBase
         virtual void processIteratorMoveEnd(childs_item_ptr item, int step);
 		virtual void processItemReserve(childs_item_ptr item, PROCESS_TYPE type);
 		virtual void processItemRelease(childs_item_ptr item, PROCESS_TYPE type);
-		virtual void processItemMove(childs_item_ptr item, node_ptr node, int pos);
+		virtual void processItemMove(node_ptr node, bool release);
 		
         void release_entry_item(childs_item_ptr item);
         EntryItem_ptr create_entry_item(Key key, T val);
@@ -432,9 +432,9 @@ void BPlusTreeBase<Key, T, D>::update_positions(node_ptr node, bool release)
 	if(release){
 		update_node = nullptr;
 	}
+	processItemMove(node, release);
 	auto childs = node->get_childs();
 	for(int i=0;i<node->childs_size();i++){
-		processItemMove((*childs)[i], update_node, i);
 		(*childs)[i]->pos = i;
 		(*childs)[i]->node = update_node;
 	}
@@ -494,7 +494,7 @@ void BPlusTreeBase<Key, T, D>::processItemRelease(childs_item_ptr item, PROCESS_
 }
 
 template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processItemMove(childs_item_ptr item, node_ptr node, int pos)
+void BPlusTreeBase<Key, T, D>::processItemMove(node_ptr node, bool release)
 {
 	return;
 }
