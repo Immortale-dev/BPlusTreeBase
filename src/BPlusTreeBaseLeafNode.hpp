@@ -53,7 +53,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T, D>
         node_ptr prev_leaf();
         childs_type_iterator childs_iterator();
         childs_type_iterator childs_iterator_end();
-        void update_positions(node_ptr node);
+        //void update_positions(node_ptr node);
 
     protected:
         child_type* childs;
@@ -245,11 +245,11 @@ void BPlusTreeBaseLeafNode<Key, T, D>::split(node_ptr node, node_ptr parent)
 	}
     
 	parent->add_keys(index, ret);
-    node->update_positions(node);
+    /*node->update_positions(node);
     // Custom update pos
     for(int i=0;i<childs_size();i++){
 		(*childs)[i]->pos = i;
-	}
+	}*/
 }
 
 template<class Key, class T, class D>
@@ -266,7 +266,7 @@ void BPlusTreeBaseLeafNode<Key, T, D>::shift_left(node_ptr parent)
     // Update key between shifted nodes
     *(parent->keys_iterator()+index) = get_key(first_child());
     // Update current node positions
-    update_positions(parent->get_node(current_index));
+    //update_positions(parent->get_node(current_index));
 }
 
 template<class Key, class T, class D>
@@ -283,8 +283,8 @@ void BPlusTreeBaseLeafNode<Key, T, D>::shift_right(node_ptr parent)
     // Update key between shifted nodes
     *(parent->keys_iterator()+(index-1)) = get_key(next->first_child());
     // Update positions
-    next->update_positions(next);
-    update_positions(parent->get_node(current_index));
+    /*next->update_positions(next);
+    update_positions(parent->get_node(current_index));*/
 }
 
 template<class Key, class T, class D>
@@ -302,7 +302,7 @@ void BPlusTreeBaseLeafNode<Key, T, D>::join_left(node_ptr parent)
     parent->remove_keys(index);
     parent->remove_nodes(index);
     // Update positions
-    update_positions(parent->get_node(current_index));
+    //update_positions(parent->get_node(current_index));
 }
 
 template<class Key, class T, class D>
@@ -320,7 +320,7 @@ void BPlusTreeBaseLeafNode<Key, T, D>::join_right(node_ptr parent)
     parent->remove_keys(index-1);
     parent->remove_nodes(index);
     // Update positions
-    update_positions(parent->get_node(current_index));
+    //update_positions(parent->get_node(current_index));
 }
 
 template<class Key, class T, class D>
@@ -364,7 +364,7 @@ typename BPlusTreeBaseLeafNode<Key, T, D>::childs_type_iterator BPlusTreeBaseLea
 {
     return childs->end();
 }
-
+/*
 template<class Key, class T, class D>
 void BPlusTreeBaseLeafNode<Key, T, D>::update_positions(node_ptr node)
 {
@@ -375,7 +375,7 @@ void BPlusTreeBaseLeafNode<Key, T, D>::update_positions(node_ptr node)
 		(*childs)[i]->pos = i;
 		(*childs)[i]->node = node;
 	}
-}
+}*/
 
 
 #endif // BPLUSTREEBASELEAFNODE_H

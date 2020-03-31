@@ -98,7 +98,7 @@ class BPlusTreeBaseNode
         virtual const Key get_key(child_item_type_ptr item) { return 0; };
         virtual node_ptr next_leaf() { return nullptr; };
         virtual node_ptr prev_leaf() { return nullptr; };
-        virtual void update_positions(node_ptr node) {};
+        //virtual void update_positions(node_ptr node) {};
         
         D data;
         std::mutex mtx;
