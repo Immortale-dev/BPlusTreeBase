@@ -109,6 +109,9 @@ void BPlusTreeBaseInternalNode<Key, T, D>::release_node(node_ptr node)
 		node->set_prev_leaf(nullptr);
 		node->set_next_leaf(nullptr);
 		auto childs = node->get_childs();
+		if(!childs){
+            return;
+		}
 		int childs_size = node->childs_size();
 		for(int i=0;i<childs_size;i++){
 			(*childs)[i]->node = nullptr;
