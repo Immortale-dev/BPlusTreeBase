@@ -43,14 +43,14 @@ class BPlusTreeBaseIterator
 		self_type& operator=(const self_type& iter);
 		BPlusTreeBaseIterator(self_type&& iter);
 		self_type& operator=(self_type&& iter);
-        BPlusTreeBaseIterator(child_item_type_wptr item, instance_type* base);
-        virtual ~BPlusTreeBaseIterator();
-        Key get_key();
-        T get_value();
-        
-    protected:
-        child_item_type_wptr item;
-        instance_type* base;
+		BPlusTreeBaseIterator(child_item_type_wptr item, instance_type* base);
+		virtual ~BPlusTreeBaseIterator();
+		Key get_key();
+		T get_value();
+		
+	protected:
+		child_item_type_wptr item;
+		instance_type* base;
 };
 
 
@@ -59,8 +59,8 @@ BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(const self_type& iter)
 {
 	this->item = iter.item;
 	this->base = iter.base;
-    
-    child_item_type_ptr it = item.lock();
+	
+	child_item_type_ptr it = item.lock();
 	
 	if(it){
 		base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -74,19 +74,19 @@ BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(const self_type& iter)
 template <class Key, class T, class D>
 typename BPlusTreeBaseIterator<Key, T, D>::self_type& BPlusTreeBaseIterator<Key, T, D>::operator=(const self_type& iter)
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
+	if(it){
+		base->processItemRelease(it, instance_type::PROCESS_TYPE::READ);
+	}
 	if(it && it->node){
 		// release node
 		base->processIteratorNodeReleased(it->node);
 	}
-	if(it){
-		base->processItemRelease(it, instance_type::PROCESS_TYPE::READ);
-	}
 	
 	this->item = iter.item;
 	this->base = iter.base;
-    
-    it = item.lock();
+	
+	it = item.lock();
 	
 	if(it){
 		base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -109,38 +109,39 @@ BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(self_type&& iter)
 template <class Key, class T, class D>
 typename BPlusTreeBaseIterator<Key, T, D>::self_type& BPlusTreeBaseIterator<Key, T, D>::operator=(self_type&& iter)
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
+	if(it){
+		base->processItemRelease(it, instance_type::PROCESS_TYPE::READ);
+	}
 	if(it && it->node){
 		// release node
 		base->processIteratorNodeReleased(it->node);
 	}
-	if(it){
-		base->processItemRelease(it, instance_type::PROCESS_TYPE::READ);
-	}
 	
 	this->item = std::move(iter.item);
 	this->base = std::move(iter.base);
+	
 	return *this;
 }
 
 template <class Key, class T, class D>
 BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator()
 {
-    this->base = nullptr;
-    //this->item = nullptr;
+	this->base = nullptr;
+	//this->item = nullptr;
 }
 
 template <class Key, class T, class D>
 BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(child_item_type_wptr item, instance_type* base)
 {
 	// Item already should be reserved
-    this->item = item;
-    this->base = base;
-    
-    child_item_type_ptr it = item.lock();
-    
-    if(it && it->node){
-        //std::cout << "::::::RESERVE::::::" << std::endl;
+	this->item = item;
+	this->base = base;
+	
+	child_item_type_ptr it = item.lock();
+	
+	if(it && it->node){
+		//std::cout << "::::::RESERVE::::::" << std::endl;
 		// reserve node
 		base->processIteratorNodeReserved(it->node);
 	}
@@ -149,28 +150,28 @@ BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(child_item_type_wptr ite
 template <class Key, class T, class D>
 Key BPlusTreeBaseIterator<Key, T, D>::get_key()
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
 	if(!it || !it->item)
 		throw std::out_of_range("Could Not get key from end()");
-    return it->item->first;
+	return it->item->first;
 }
 
 template <class Key, class T, class D>
 BPlusTreeBaseIterator<Key, T, D>::~BPlusTreeBaseIterator()
 {
-    child_item_type_ptr it = item.lock();
-	if(it && it->node){
-		base->processIteratorNodeReleased(it->node);
-	}
+	child_item_type_ptr it = item.lock();
 	if(it){
 		base->processItemRelease(it, instance_type::PROCESS_TYPE::READ);
+	}
+	if(it && it->node){
+		base->processIteratorNodeReleased(it->node);
 	}
 }
 
 template <class Key, class T, class D>
 T BPlusTreeBaseIterator<Key, T, D>::get_value()
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
 	if(!it || !it->item)
 		throw std::out_of_range("Could Not get value from end()");
 	return it->item->second;
@@ -179,7 +180,7 @@ T BPlusTreeBaseIterator<Key, T, D>::get_value()
 template <class Key, class T, class D>
 typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, T, D>::operator++()
 {	
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
 	// Process Move Start
 	base->processIteratorMoveStart(it, 1);
 	
@@ -199,18 +200,18 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 		base->processSearchNodeStart(tmp, instance_type::PROCESS_TYPE::READ);
 		
 		if(!tmp->size()){
-            it = nullptr;
+			it = nullptr;
 			item = it;
 		}
 		else{
 			// Item here is already reserved through the min_node method
 			item = tmp->first_child();
-            it = item.lock();
+			it = item.lock();
 			
 			// Process reserve iterator node
 			base->processIteratorNodeReserved(it->node);
 		}
-        
+		
 		
 		// Process search end
 		base->processSearchNodeEnd(tmp, instance_type::PROCESS_TYPE::READ);
@@ -227,7 +228,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 		
 		node = node->next_leaf();
 		
-        it = nullptr;
+		it = nullptr;
 		item = it;
 		
 		if(node){
@@ -235,8 +236,8 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 			base->processSearchNodeStart(node, instance_type::PROCESS_TYPE::READ);
 			
 			item = node->first_child();
-            
-            it = item.lock();
+			
+			it = item.lock();
 			
 			// Reserve Item
 			base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -255,7 +256,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 	}
 	
 	item = node->get(it->pos+1);
-    it = item.lock();
+	it = item.lock();
 	
 	// Reserve Item
 	base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -269,7 +270,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 template <class Key, class T, class D>
 typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, T, D>::operator++(int)
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
 	// Process Move Start
 	base->processIteratorMoveStart(it, 1);
 	
@@ -291,13 +292,13 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 		base->processSearchNodeStart(tmp, instance_type::PROCESS_TYPE::READ);
 		
 		if(!tmp->size()){
-            it = nullptr;
+			it = nullptr;
 			item = it;
 		}
 		else{
 			// Item here is already reserved through the min_node method
 			item = tmp->first_child();
-            it = item.lock();
+			it = item.lock();
 			
 			// Process reserve iterator node
 			base->processIteratorNodeReserved(it->node);
@@ -318,7 +319,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 		
 		node = node->next_leaf();
 		
-        it = nullptr;
+		it = nullptr;
 		item = it;
 		
 		if(node){
@@ -326,7 +327,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 			base->processSearchNodeStart(node, instance_type::PROCESS_TYPE::READ);
 			
 			item = node->first_child();
-            it = item.lock();
+			it = item.lock();
 			
 			// Reserve Item
 			base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -345,7 +346,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 	}
 	
 	item = node->get(it->pos+1);
-    it = item.lock();
+	it = item.lock();
 	
 	// Reserve Item
 	base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -359,7 +360,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 template <class Key, class T, class D>
 typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, T, D>::operator--()
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
 	// Process Move Start
 	base->processIteratorMoveStart(it, -1);
 	
@@ -379,13 +380,13 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 		base->processSearchNodeStart(tmp, instance_type::PROCESS_TYPE::READ);
 		
 		if(!tmp->size()){
-            it = nullptr;
+			it = nullptr;
 			item = it;
 		}
 		else{
 			// Item reserved through the max_node method
 			item = tmp->last_child();
-            it = item.lock();
+			it = item.lock();
 			
 			// Process reserve iterator node
 			base->processIteratorNodeReserved(it->node);
@@ -406,7 +407,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 		
 		node = node->prev_leaf();
 		
-        it = nullptr;
+		it = nullptr;
 		item = it;
 		
 		if(node){
@@ -414,7 +415,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 			base->processSearchNodeStart(node, instance_type::PROCESS_TYPE::READ);
 			
 			item = node->last_child();
-            it = item.lock();
+			it = item.lock();
 			
 			// Relerve Item
 			base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -433,7 +434,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 	}
 	
 	item = node->get(it->pos-1);
-    it = item.lock();
+	it = item.lock();
 	
 	// Reserve Item
 	base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -447,7 +448,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 template <class Key, class T, class D>
 typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, T, D>::operator--(int)
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
 	// Process Move Start
 	base->processIteratorMoveStart(it, -1);
 	
@@ -469,13 +470,13 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 		base->processSearchNodeStart(tmp, instance_type::PROCESS_TYPE::READ);
 		
 		if(!tmp->size()){
-            it = nullptr;
+			it = nullptr;
 			item = it;
 		}
 		else{
 			// Item reserved through the max_node method
 			item = tmp->last_child();
-            it = item.lock();
+			it = item.lock();
 			
 			// Process reserve iterator node
 			base->processIteratorNodeReserved(it->node);
@@ -496,7 +497,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 		
 		node = node->prev_leaf();
 		
-        it = nullptr;
+		it = nullptr;
 		item = it;
 		
 		if(node){
@@ -504,7 +505,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 			base->processSearchNodeStart(node, instance_type::PROCESS_TYPE::READ);
 			
 			item = node->last_child();
-            it = item.lock();
+			it = item.lock();
 			
 			// Reserve Item
 			base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -523,7 +524,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 	}
 	
 	item = node->get(it->pos-1);
-    it = item.lock();
+	it = item.lock();
 	
 	// Reserve Item
 	base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -537,22 +538,22 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 template <class Key, class T, class D>
 typename BPlusTreeBaseIterator<Key, T, D>::reference BPlusTreeBaseIterator<Key, T, D>::operator*()
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
 	return *(it->item);
 }
 
 template <class Key, class T, class D>
 typename BPlusTreeBaseIterator<Key, T, D>::pointer BPlusTreeBaseIterator<Key, T, D>::operator->()
 {
-    child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = item.lock();
 	return it->item;
 }
 
 template <class Key, class T, class D>
 bool BPlusTreeBaseIterator<Key, T, D>::operator==(const self_type &r)
 {
-    child_item_type_ptr it = item.lock();
-    child_item_type_ptr rit = r.item.lock();
+	child_item_type_ptr it = item.lock();
+	child_item_type_ptr rit = r.item.lock();
 	if(!it && !rit){
 		return base == r.base;
 	}
@@ -565,8 +566,8 @@ bool BPlusTreeBaseIterator<Key, T, D>::operator==(const self_type &r)
 template <class Key, class T, class D>
 bool BPlusTreeBaseIterator<Key, T, D>::operator!=(const self_type &r)
 {
-    child_item_type_ptr it = item.lock();
-    child_item_type_ptr rit = r.item.lock();
+	child_item_type_ptr it = item.lock();
+	child_item_type_ptr rit = r.item.lock();
 	if(!it && !rit){
 		return base != r.base;
 	}
