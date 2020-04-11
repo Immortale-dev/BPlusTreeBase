@@ -92,6 +92,11 @@ class BPlusTreeBase
 		virtual void processItemReserve(childs_item_ptr item, PROCESS_TYPE type);
 		virtual void processItemRelease(childs_item_ptr item, PROCESS_TYPE type);
 		virtual void processItemMove(node_ptr node, bool release);
+		virtual void processLeafInsertItem(node_ptr& node);
+		virtual void processLeafDeleteItem(node_ptr& node);
+		virtual void processLeafSplit(node_ptr& node, node_ptr& new_node, node_ptr& link_node);
+		virtual void processLeafJoin(node_ptr& node, node_ptr& join_node, node_ptr& link_node);
+		virtual void processLeafShift(node_ptr& node, node_ptr& shift_node);
 		
 		void release_entry_item(childs_item_ptr item);
 		EntryItem_ptr create_entry_item(Key key, T val);
@@ -501,6 +506,36 @@ void BPlusTreeBase<Key, T, D>::processItemMove(node_ptr node, bool release)
 }
 
 template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processLeafInsertItem(node_ptr& node)
+{
+	return;
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processLeafDeleteItem(node_ptr& node)
+{
+	return;
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processLeafSplit(node_ptr& node, node_ptr& new_node, node_ptr& link_node)
+{
+	return;
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processLeafJoin(node_ptr& node, node_ptr& join_node, node_ptr& link_node)
+{
+	return;
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processLeafShift(node_ptr& node, node_ptr& shift_node)
+{
+	return;
+}
+
+template<class Key, class T, class D>
 void BPlusTreeBase<Key, T, D>::processInsertNode(node_ptr& node)
 {
 	return;
@@ -591,6 +626,8 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 			processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 			return false;
 		}
+		// Process leaf node to avoid dead locks
+		processLeafDeleteItem(node);
 		int index = node->get_index(key);
 		childs_item_ptr itm = node->get(index);
 		// Reserve Item
@@ -677,6 +714,11 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 		processSearchNodeStart(nodeLeft, PROCESS_TYPE::WRITE);
 	}
 	if(nodeLeft && nodeLeft->size() > factor){
+		
+		if(is_leaf(node)){
+			// Avoid dead locks
+			processLeafShift(node, nodeLeft);
+		}
 
 		// Shift nodes
 		node->shift_left(parent);
@@ -707,6 +749,11 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 		if(nodeLeft){
 			// process finish with leftNode
 			processSearchNodeEnd(nodeLeft, PROCESS_TYPE::WRITE);
+		}
+		
+		if(is_leaf(node)){
+			// Avoid dead locks
+			processLeafShift(node, nodeRight);
 		}
 
 		// Shift nodes
@@ -753,6 +800,16 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 	}
 
 	if(join_r){
+		
+		if(is_leaf(node)){
+			// Avoid dead locks
+			node_ptr nextLeaf = swapped ? nodeRight : joinNode->next_leaf();
+			if(nextLeaf && !swapped){
+				processSearchNodeStart(nextLeaf, PROCESS_TYPE::WRITE);
+			}
+			processLeafJoin(node, joinNode, nextLeaf);
+		}
+		
 		node->join_right(parent);
 		
 		// Update positions
@@ -762,9 +819,6 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 			node_ptr nextLeaf = swapped ? nodeRight : joinNode->next_leaf();
 			if(nextLeaf){
 				// Update next to right node prev leaf
-				if(!swapped){
-					processSearchNodeStart(nextLeaf, PROCESS_TYPE::WRITE);
-				}
 				nextLeaf->set_prev_leaf(node);
 				processInsertNode(nextLeaf);
 				if(!swapped){
@@ -775,6 +829,16 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 		}
 	}
 	else{
+		
+		if(is_leaf(node)){
+			// Avoid dead locks
+			node_ptr prevLeaf = swapped ? nodeLeft : joinNode->prev_leaf();
+			if(prevLeaf && !swapped){
+				processSearchNodeStart(prevLeaf, PROCESS_TYPE::WRITE);
+			}
+			processLeafJoin(node, joinNode, prevLeaf);
+		}
+		
 		node->join_left(parent);
 		
 		// Update positions
@@ -784,9 +848,6 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 			node_ptr prevLeaf = swapped ? nodeLeft : joinNode->prev_leaf();
 			if(prevLeaf){
 				// Update prev to left node next leaf
-				if(!swapped){
-					processSearchNodeStart(prevLeaf, PROCESS_TYPE::WRITE);
-				}
 				prevLeaf->set_next_leaf(node);
 				processInsertNode(prevLeaf);
 				if(!swapped){
@@ -853,10 +914,12 @@ bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryI
 		ins = node;
 		if(!node->exists(key)){
 			v_count++;
+			processLeafInsertItem(node);
 			node->insert(item);
 			nodeChanged = true;
 		}
 		else if(overwrite){
+			processLeafInsertItem(node);
 			int index = node->get_index(key);
 			// Reserve Item
 			processItemReserve(node->get(index), PROCESS_TYPE::WRITE);
@@ -912,6 +975,16 @@ bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryI
 			parent->add_nodes(0, node);
 		}
 		
+		if(is_leaf(node)){
+			// Process all nodes simulteniously to avoid dead locks
+			node_ptr link_node;
+			link_node = parent->first_child_node().get() == node.get() ? node->next_leaf() : node->prev_leaf();
+			if(link_node){
+				processSearchNodeStart(link_node, PROCESS_TYPE::WRITE);
+			}
+			processLeafSplit(node, nnode, link_node);
+		}
+		
 		// Split node to nnode
 		node->split(nnode, parent);
 		
@@ -944,7 +1017,7 @@ bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryI
 				
 				// Update next leaf
 				if(nextLeaf){
-					processSearchNodeStart(nextLeaf, PROCESS_TYPE::WRITE);
+					//processSearchNodeStart(nextLeaf, PROCESS_TYPE::WRITE);
 					nextLeaf->set_prev_leaf(nnode);
 					processInsertNode(nextLeaf);
 					processSearchNodeEnd(nextLeaf, PROCESS_TYPE::WRITE);
@@ -968,7 +1041,7 @@ bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryI
 				
 				// Update prev node
 				if(prevLeaf){
-					processSearchNodeStart(prevLeaf, PROCESS_TYPE::WRITE);
+					//processSearchNodeStart(prevLeaf, PROCESS_TYPE::WRITE);
 					prevLeaf->set_next_leaf(nnode);
 					processInsertNode(prevLeaf);
 					processSearchNodeEnd(prevLeaf, PROCESS_TYPE::WRITE);
