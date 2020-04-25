@@ -77,11 +77,11 @@ class bpt_test : public BPlusTreeBase<Key,T> {
 			
 		}
 	protected:
-		void processInsertNode(node_ptr& node)
+		void processInsertNode(node_ptr node)
 		{
 			this_thread::sleep_for(chrono::milliseconds(1));
 		}
-		void processSearchNodeStart(node_ptr& node, PROCESS_TYPE pt)
+		void processSearchNodeStart(node_ptr node, PROCESS_TYPE pt)
 		{
 			BPlusTreeBase<Key,T>::processSearchNodeStart(node, pt);
 			this_thread::sleep_for(chrono::milliseconds(1));

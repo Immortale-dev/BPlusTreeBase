@@ -193,6 +193,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				IT("Tree should be empty",{
 					EXPECT(base.size()).toBe(0);
 					INFO_PRINT("Mutex: "+to_string(base.get_mutex_count()));
+                    INFO_PRINT("item_reserve_count: " + to_string(base.item_reserve_count.load()));
 				});
 			});
 		});
@@ -280,6 +281,7 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				IT("Then there should be 3 leafs with 3 items in each, and the structure to be {2,4,10,3,1,2,3,3,4,5,6,3,10,17,18}", {
 					EXPECT(base.bfs_result()).toBeIterableEqual({2,4,10,3,1,2,3,3,4,5,6,3,10,17,18});
 					INFO_PRINT("Mutex: "+to_string(base.get_mutex_count()));
+                    INFO_PRINT("item_reserve_count: " + to_string(base.item_reserve_count.load()));
 				});
 			});
 		});
@@ -351,8 +353,9 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 		});
 		
 		IT("base[88] should equal to `str`", {
-			EXPECT(base[88]).toBe("str");
+            EXPECT(base[88]).toBe("str");
 			INFO_PRINT("Mutex: "+to_string(base.get_mutex_count()));
+            INFO_PRINT("item_reserve_count: " + to_string(base.item_reserve_count.load()));
 		});
 	});
 	
