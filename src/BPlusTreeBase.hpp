@@ -27,6 +27,7 @@ class BPlusTreeBase
 		typedef std::pair<Key, T> value_type;
 		typedef typename Node::childs_type_iterator childs_type_iterator;	
 		typedef std::shared_ptr<Node> node_ptr;
+		typedef typename Node::child_item_type child_item_type;
 		typedef typename Node::child_item_type_ptr childs_item_ptr;
 		typedef BPlusTreeBase<Key,T> self_type;
 		typedef std::list<node_ptr> node_list;
@@ -63,7 +64,7 @@ class BPlusTreeBase
 	#endif
 
 	protected:
-		const Key get_entry_key(EntryItem_ptr item);
+		const Key get_entry_key(childs_item_ptr item);
 		node_ptr min_node();
 		node_ptr min_node(node_ptr node);
 		node_ptr max_node();
@@ -74,7 +75,7 @@ class BPlusTreeBase
 		node_ptr get_stem();
 		bool is_root(node_ptr node);
 		bool is_stem(node_ptr node);
-		bool insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite, node_list& list);
+		bool insert_req(node_ptr node, node_ptr parent, childs_item_ptr item, node_ptr& ins, bool overwrite, node_list& list);
 		bool erase_req(node_ptr node, node_ptr parent, const Key &key, node_list& list);
 		void clear_req(node_ptr node);
 		bool is_leaf(node_ptr node);
@@ -94,6 +95,8 @@ class BPlusTreeBase
 		virtual void processItemReserve(childs_item_ptr item, PROCESS_TYPE type);
 		virtual void processItemRelease(childs_item_ptr item, PROCESS_TYPE type);
 		virtual void processItemMove(node_ptr node, bool release);
+		virtual void processLeafReserve(node_ptr node, PROCESS_TYPE type);
+		virtual void processLeafRelease(node_ptr node, PROCESS_TYPE type);
 		virtual void processLeafInsertItem(node_ptr node, childs_item_ptr item);
 		virtual void processLeafDeleteItem(node_ptr node, childs_item_ptr item);
 		virtual void processLeafSplit(node_ptr node, node_ptr new_node, node_ptr link_node);
@@ -157,9 +160,9 @@ BPlusTreeBase<Key, T, D>::~BPlusTreeBase()
 }
 
 template<class Key, class T, class D>
-const Key BPlusTreeBase<Key, T, D>::get_entry_key(EntryItem_ptr item)
+const Key BPlusTreeBase<Key, T, D>::get_entry_key(childs_item_ptr item)
 {
-	return item->first;
+	return item->item->first;
 }
 
 template<class Key, class T, class D>
@@ -207,6 +210,11 @@ template<class Key, class T, class D>
 void BPlusTreeBase<Key, T, D>::insert(value_type item, bool overwrite)
 {
 	EntryItem_ptr itm = create_entry_item(item.first, item.second);
+	
+	// Create record item
+	childs_item_ptr ch(new child_item_type());
+	ch->item = itm;
+	
 	//const Key& key = get_entry_key(itm);
 	node_ptr node = get_stem();
 	node_ptr ins = nullptr;
@@ -215,7 +223,7 @@ void BPlusTreeBase<Key, T, D>::insert(value_type item, bool overwrite)
 	node_list list;
 	list.push_back(node);
 	
-	insert_req(node, nullptr, itm, ins, overwrite, list);
+	insert_req(node, nullptr, ch, ins, overwrite, list);
 	
 	//processSearchNodeStart(ins);
 	//childs_type_iterator child_iterator = ins->childs_iterator()+ins->get_index(key);
@@ -498,6 +506,18 @@ void BPlusTreeBase<Key, T, D>::processItemRelease(childs_item_ptr item, PROCESS_
 	#ifdef DEBUG
 		item_reserve_count--;
 	#endif
+	return;
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processLeafReserve(node_ptr node, PROCESS_TYPE type)
+{
+	return;
+}
+
+template<class Key, class T, class D>
+void BPlusTreeBase<Key, T, D>::processLeafRelease(node_ptr node, PROCESS_TYPE type)
+{
 	return;
 }
 
@@ -973,7 +993,7 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 }
 
 template<class Key, class T, class D>
-bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryItem_ptr& item, node_ptr& ins, bool overwrite, node_list& list)
+bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, childs_item_ptr item, node_ptr& ins, bool overwrite, node_list& list)
 {	
 	// Process Node before search
 	processSearchNodeStart(node, PROCESS_TYPE::WRITE);
@@ -997,25 +1017,24 @@ bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryI
 		
 		ins = node;
 		
-		
-		
 		if(!node->exists(key)){
 			// Leaf change insert item
-			processLeafInsertItem(node, nullptr);
+			processLeafInsertItem(node, item);
 			
-			v_count++;
+			v_count++;			
 			node->insert(item);
-			nodeChanged = true;
 			
 			update_positions(node);
+			
+			// Free item
+			processItemRelease(item, PROCESS_TYPE::WRITE);
 		
 			// Free leaf item change
 			processLeafFree(node);
+			
+			nodeChanged = true;
 		}
 		else if(overwrite){
-			//////////////////////////////////
-			// TODO: avoid dead locks here. //
-			//////////////////////////////////
 			int index = node->get_index(key);
 			
 			childs_item_ptr itm = node->get(index);
@@ -1023,15 +1042,12 @@ bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryI
 			// Leaf change insert item
 			processLeafInsertItem(node, itm);
 			
-			// Reserve Item
-			//processItemReserve(item, PROCESS_TYPE::WRITE);
-			
-			itm->item->second = item->second;
-			
-			// Release Item
-			processItemRelease(itm, PROCESS_TYPE::WRITE);
+			itm->item->second = item->item->second;
 			
 			update_positions(node);
+			
+			// Free Item
+			processItemRelease(itm, PROCESS_TYPE::WRITE);
 		
 			// Free leaf item change
 			processLeafFree(node);
@@ -1065,7 +1081,7 @@ bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, EntryI
 
 	node_ptr nnode = nullptr;
 
-		if(node->size() >= factor*2){
+	if(node->size() >= factor*2){
 		
 		// Ensure that parent node is locked
 		assert(!list.empty());
