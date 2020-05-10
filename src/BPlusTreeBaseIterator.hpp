@@ -188,7 +188,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 			item = tmp->first_child();
 			it = item.lock();
 			
-			base->processLeafReserve(node, instance_type::PROCESS_TYPE::READ);
+			base->processLeafReserve(tmp, instance_type::PROCESS_TYPE::READ);
 			
 			base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
 		}
@@ -273,7 +273,7 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 			item = tmp->first_child();
 			it = item.lock();
 			
-			base->processLeafReserve(node, instance_type::PROCESS_TYPE::READ);
+			base->processLeafReserve(tmp, instance_type::PROCESS_TYPE::READ);
 			
 			base->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
 		}
