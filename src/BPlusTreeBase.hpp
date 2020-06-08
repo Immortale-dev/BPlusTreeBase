@@ -7,21 +7,23 @@
 #include <list>
 #include <functional>
 #include <iostream>
+#include "BPlusTreeBaseUtils.hpp"
 #include "BPlusTreeBaseNode.hpp"
 #include "BPlusTreeBaseInternalNode.hpp"
 #include "BPlusTreeBaseLeafNode.hpp"
 #include "BPlusTreeBaseIterator.hpp"
 
-template <class Key, class T, class D = void*>
+
+__B_PLUS_TREE_BASE_TEMPLATE__
 class BPlusTreeBase
 {
 	public:
-		friend class BPlusTreeBaseIterator<Key, T, D>;
+		friend ITERATOR;
 
 		typedef BPlusTreeBaseNode<Key, T, D> Node;
-		typedef BPlusTreeBaseIterator<Key, T, D> iterator;
-		typedef BPlusTreeBaseInternalNode<Key, T, D> InternalNode;
-		typedef BPlusTreeBaseLeafNode<Key, T, D> LeafNode;
+		typedef ITERATOR iterator;
+		typedef INTERNAL InternalNode;
+		typedef LEAF LeafNode;
 		typedef std::pair<const Key, T> EntryItem;
 		typedef std::shared_ptr<EntryItem> EntryItem_ptr;
 		typedef std::pair<Key, T> value_type;
@@ -29,7 +31,7 @@ class BPlusTreeBase
 		typedef std::shared_ptr<Node> node_ptr;
 		typedef typename Node::child_item_type child_item_type;
 		typedef typename Node::child_item_type_ptr childs_item_ptr;
-		typedef BPlusTreeBase<Key,T> self_type;
+		typedef __B_PLUS_TREE_BASE_CLASS__ self_type;
 		typedef std::list<node_ptr> node_list;
 		typedef std::function<int(const Key& left, const Key& right)> compare_t;
 		
@@ -118,8 +120,8 @@ class BPlusTreeBase
 		compare_t compare_fn = [](const Key& left, const Key& right)->int{if (left == right) return 0; return left < right ? -1 : 1;};
 };
 
-template<class Key, class T, class D>
-BPlusTreeBase<Key, T, D>::BPlusTreeBase(const self_type& obj) : factor(obj.factor)
+__B_PLUS_TREE_BASE_TEMPLATE__
+__B_PLUS_TREE_BASE_CLASS__::BPlusTreeBase(const self_type& obj) : factor(obj.factor)
 {
 	root = obj.root;
 	last = obj.last;
@@ -131,14 +133,14 @@ BPlusTreeBase<Key, T, D>::BPlusTreeBase(const self_type& obj) : factor(obj.facto
 	#endif
 }
 
-template<class Key, class T, class D>
-BPlusTreeBase<Key, T, D>::BPlusTreeBase(int f) : factor(f)
+__B_PLUS_TREE_BASE_TEMPLATE__
+__B_PLUS_TREE_BASE_CLASS__::BPlusTreeBase(int f) : factor(f)
 {
 	init();
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::init()
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::init()
 {
 	stem = create_internal_node();
 	node_ptr node = create_leaf_node();
@@ -151,8 +153,8 @@ void BPlusTreeBase<Key, T, D>::init()
 	#endif
 }
 
-template<class Key, class T, class D>
-BPlusTreeBase<Key, T, D>::~BPlusTreeBase()
+__B_PLUS_TREE_BASE_TEMPLATE__
+__B_PLUS_TREE_BASE_CLASS__::~BPlusTreeBase()
 {
 	if(!get_root())
 		return;
@@ -161,26 +163,26 @@ BPlusTreeBase<Key, T, D>::~BPlusTreeBase()
 	stem = nullptr;
 }
 
-template<class Key, class T, class D>
-const Key BPlusTreeBase<Key, T, D>::get_entry_key(childs_item_ptr item)
+__B_PLUS_TREE_BASE_TEMPLATE__
+const Key __B_PLUS_TREE_BASE_CLASS__::get_entry_key(childs_item_ptr item)
 {
 	return item->item->first;
 }
 
-template<class Key, class T, class D>
-long long int BPlusTreeBase<Key, T, D>::size()
+__B_PLUS_TREE_BASE_TEMPLATE__
+long long int __B_PLUS_TREE_BASE_CLASS__::size()
 {
 	return v_count.load();
 }
 
-template<class Key, class T, class D>
-T BPlusTreeBase<Key, T, D>::operator[](Key key)
+__B_PLUS_TREE_BASE_TEMPLATE__
+T __B_PLUS_TREE_BASE_CLASS__::operator[](Key key)
 {
 	return find(key)->second;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::find(Key k)
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::find(Key k)
 {
 	const Key key = k;
 	node_ptr node = get_stem();
@@ -208,8 +210,8 @@ typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::find(Key k
 	return end();
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::insert(value_type item, bool overwrite)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::insert(value_type item, bool overwrite)
 {
 	EntryItem_ptr itm = create_entry_item(item.first, item.second);
 	
@@ -234,8 +236,8 @@ void BPlusTreeBase<Key, T, D>::insert(value_type item, bool overwrite)
 	//return find(key);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::erase(Key item)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::erase(Key item)
 {
 	node_ptr node = get_stem();
 	node_list list;
@@ -243,24 +245,24 @@ void BPlusTreeBase<Key, T, D>::erase(Key item)
 	erase_req(node, nullptr, item, list);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::erase(iterator it)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::erase(iterator it)
 {
 	if(it == end())
 		return;
 	erase(it.get_key());
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::clear()
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::clear()
 {
 	node_ptr node = get_stem();
 	clear_req(node);
 	v_count = 0;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::clear_req(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::clear_req(node_ptr node)
 {
 	processSearchNodeStart(node, PROCESS_TYPE::WRITE);
 	if(node->is_leaf()){
@@ -296,8 +298,8 @@ void BPlusTreeBase<Key, T, D>::clear_req(node_ptr node)
 	}
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::begin()
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::begin()
 {
 	if(!size()){
 		return end();
@@ -311,8 +313,8 @@ typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::begin()
 	return it;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::lower_bound(Key k)
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::lower_bound(Key k)
 {
 	if(!size()){
 		return end();
@@ -343,8 +345,8 @@ typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::lower_boun
 	return end();
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::upper_bound(Key k)
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::upper_bound(Key k)
 {
 	if(!size()){
 		return end();
@@ -357,14 +359,14 @@ typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::upper_boun
 	return it;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::end()
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::end()
 {
 	return iterator(last, this);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::min_node()
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::min_node()
 {
 	node_ptr node = get_stem();
 	
@@ -374,8 +376,8 @@ typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::min_node()
 	return min_node(node);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::min_node(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::min_node(node_ptr node)
 {
 	if(is_leaf(node)){
 		// Reserve first item
@@ -400,26 +402,26 @@ typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::min_node(n
 	return min_node(nnode);
 }
 
-template<class Key, class T, class D>
-bool BPlusTreeBase<Key, T, D>::is_root(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+bool __B_PLUS_TREE_BASE_CLASS__::is_root(node_ptr node)
 {
 	return root.get() == node.get();
 }
 
-template<class Key, class T, class D>
-bool BPlusTreeBase<Key, T, D>::is_stem(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+bool __B_PLUS_TREE_BASE_CLASS__::is_stem(node_ptr node)
 {
 	return stem.get() == node.get();
 }
 
-template<class Key, class T, class D>
-bool BPlusTreeBase<Key, T, D>::is_leaf(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+bool __B_PLUS_TREE_BASE_CLASS__::is_leaf(node_ptr node)
 {
 	return node->is_leaf();
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::max_node()
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::max_node()
 {
 	node_ptr node = get_stem();
 	
@@ -429,8 +431,8 @@ typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::max_node()
 	return max_node(node);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::max_node(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::max_node(node_ptr node)
 {
 	if(is_leaf(node)){
 		// Reserve last item
@@ -455,8 +457,8 @@ typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::max_node(n
 	return max_node(nnode);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::set_root(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::set_root(node_ptr node)
 {
 	root = node;
 	if(stem->nodes_size()){
@@ -465,22 +467,22 @@ void BPlusTreeBase<Key, T, D>::set_root(node_ptr node)
 	stem->add_nodes(0,node);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::create_internal_node()
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::create_internal_node()
 {
 	// TODO: replace with allocator functions
 	return node_ptr(new InternalNode());
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::create_leaf_node()
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::create_leaf_node()
 {
 	// TODO: replace with allocator functions
 	return node_ptr(new LeafNode());
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::release_node(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::release_node(node_ptr node)
 {
 	if(node->is_leaf()){
 		//node->set_next_leaf(nullptr);
@@ -494,32 +496,32 @@ void BPlusTreeBase<Key, T, D>::release_node(node_ptr node)
 	// delete node;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::update_positions(node_ptr node, bool release)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::update_positions(node_ptr node, bool release)
 {
 	processItemMove(node, release);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::update_leaf_ref(node_ptr node, node_ptr ref_node, LEAF_REF ref)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::update_leaf_ref(node_ptr node, node_ptr ref_node, LEAF_REF ref)
 {
 	processLeafRef(node, ref_node, ref);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::get_root()
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::get_root()
 {
 	return root;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::node_ptr BPlusTreeBase<Key, T, D>::get_stem()
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::get_stem()
 {
 	return stem;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processSearchNodeStart(node_ptr node, PROCESS_TYPE type)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processSearchNodeStart(node_ptr node, PROCESS_TYPE type)
 {
 	node->lock();
 	#ifdef DEBUG
@@ -528,8 +530,8 @@ void BPlusTreeBase<Key, T, D>::processSearchNodeStart(node_ptr node, PROCESS_TYP
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processSearchNodeEnd(node_ptr node, PROCESS_TYPE type)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processSearchNodeEnd(node_ptr node, PROCESS_TYPE type)
 {
 	#ifdef DEBUG
 		mutex_count--;
@@ -538,8 +540,8 @@ void BPlusTreeBase<Key, T, D>::processSearchNodeEnd(node_ptr node, PROCESS_TYPE 
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processItemReserve(childs_item_ptr item, PROCESS_TYPE type)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processItemReserve(childs_item_ptr item, PROCESS_TYPE type)
 {
 	#ifdef DEBUG
 		item_reserve_count++;
@@ -547,8 +549,8 @@ void BPlusTreeBase<Key, T, D>::processItemReserve(childs_item_ptr item, PROCESS_
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processItemRelease(childs_item_ptr item, PROCESS_TYPE type)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processItemRelease(childs_item_ptr item, PROCESS_TYPE type)
 {
 	#ifdef DEBUG
 		item_reserve_count--;
@@ -556,20 +558,20 @@ void BPlusTreeBase<Key, T, D>::processItemRelease(childs_item_ptr item, PROCESS_
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafReserve(node_ptr node, PROCESS_TYPE type)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafReserve(node_ptr node, PROCESS_TYPE type)
 {
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafRelease(node_ptr node, PROCESS_TYPE type)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafRelease(node_ptr node, PROCESS_TYPE type)
 {
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafInsertItem(node_ptr node, childs_item_ptr item)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafInsertItem(node_ptr node, childs_item_ptr item)
 {
 	#ifdef DEBUG
 	if(item){
@@ -579,8 +581,8 @@ void BPlusTreeBase<Key, T, D>::processLeafInsertItem(node_ptr node, childs_item_
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafDeleteItem(node_ptr node, childs_item_ptr item)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafDeleteItem(node_ptr node, childs_item_ptr item)
 {
 	#ifdef DEBUG
 		item_reserve_count++;
@@ -588,32 +590,32 @@ void BPlusTreeBase<Key, T, D>::processLeafDeleteItem(node_ptr node, childs_item_
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafSplit(node_ptr node, node_ptr new_node, node_ptr link_node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafSplit(node_ptr node, node_ptr new_node, node_ptr link_node)
 {
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafJoin(node_ptr node, node_ptr join_node, node_ptr link_node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafJoin(node_ptr node, node_ptr join_node, node_ptr link_node)
 {
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafShift(node_ptr node, node_ptr shift_node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafShift(node_ptr node, node_ptr shift_node)
 {
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafFree(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafFree(node_ptr node)
 {
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processLeafRef(node_ptr node, node_ptr ref_node, LEAF_REF ref)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafRef(node_ptr node, node_ptr ref_node, LEAF_REF ref)
 {
 	if(ref == LEAF_REF::NEXT){
 		node->set_next_leaf(ref_node);
@@ -623,8 +625,8 @@ void BPlusTreeBase<Key, T, D>::processLeafRef(node_ptr node, node_ptr ref_node, 
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processItemMove(node_ptr node, bool release)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processItemMove(node_ptr node, bool release)
 {
 	if(!node->get_childs()){
 		return;
@@ -641,20 +643,20 @@ void BPlusTreeBase<Key, T, D>::processItemMove(node_ptr node, bool release)
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processInsertNode(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processInsertNode(node_ptr node)
 {
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processDeleteNode(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processDeleteNode(node_ptr node)
 {
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processIteratorNodeReserved(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processIteratorNodeReserved(node_ptr node)
 {
 	#ifdef DEBUG
 		reserved_count++;
@@ -662,8 +664,8 @@ void BPlusTreeBase<Key, T, D>::processIteratorNodeReserved(node_ptr node)
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processIteratorNodeReleased(node_ptr node)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processIteratorNodeReleased(node_ptr node)
 {
 	#ifdef DEBUG
 		reserved_count--;
@@ -671,8 +673,8 @@ void BPlusTreeBase<Key, T, D>::processIteratorNodeReleased(node_ptr node)
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processIteratorMoveStart(childs_item_ptr item, int step)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processIteratorMoveStart(childs_item_ptr item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count++;
@@ -680,8 +682,8 @@ void BPlusTreeBase<Key, T, D>::processIteratorMoveStart(childs_item_ptr item, in
 	return;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::processIteratorMoveEnd(childs_item_ptr item, int step)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processIteratorMoveEnd(childs_item_ptr item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count--;
@@ -689,23 +691,23 @@ void BPlusTreeBase<Key, T, D>::processIteratorMoveEnd(childs_item_ptr item, int 
 	return;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBase<Key, T, D>::EntryItem_ptr BPlusTreeBase<Key, T, D>::create_entry_item(Key key, T val)
+__B_PLUS_TREE_BASE_TEMPLATE__
+typename __B_PLUS_TREE_BASE_CLASS__::EntryItem_ptr __B_PLUS_TREE_BASE_CLASS__::create_entry_item(Key key, T val)
 {
 	// TODO: replace with allocator functions
 	return EntryItem_ptr(new EntryItem(key, val));
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::release_entry_item(childs_item_ptr item)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::release_entry_item(childs_item_ptr item)
 {
 	// TODO replace with allocator functions
 	// No need to delete shared ptr
 	// delete item;
 }
 
-template<class Key, class T, class D>
-bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const Key& key, node_list& list)
+__B_PLUS_TREE_BASE_TEMPLATE__
+bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const Key& key, node_list& list)
 {
 	// Process Node before search
 	processSearchNodeStart(node, PROCESS_TYPE::WRITE);
@@ -1039,8 +1041,8 @@ bool BPlusTreeBase<Key, T, D>::erase_req(node_ptr node, node_ptr parent, const K
 	return true;
 }
 
-template<class Key, class T, class D>
-bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, childs_item_ptr item, node_ptr& ins, bool overwrite, node_list& list)
+__B_PLUS_TREE_BASE_TEMPLATE__
+bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, childs_item_ptr item, node_ptr& ins, bool overwrite, node_list& list)
 {	
 	// Process Node before search
 	processSearchNodeStart(node, PROCESS_TYPE::WRITE);
@@ -1286,14 +1288,14 @@ bool BPlusTreeBase<Key, T, D>::insert_req(node_ptr node, node_ptr parent, childs
 }
 
 #ifdef DEBUG
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::print_tree()
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::print_tree()
 {
 	print_tree(get_root(), "");
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::print_tree(node_ptr node, std::string tabs)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::print_tree(node_ptr node, std::string tabs)
 {
 	using namespace std;
 	if(is_leaf(node)){
@@ -1324,22 +1326,22 @@ void BPlusTreeBase<Key, T, D>::print_tree(node_ptr node, std::string tabs)
 	cout << tabs << ")" << endl;
 }
 
-template<class Key, class T, class D>
-std::vector<Key> BPlusTreeBase<Key, T, D>::bfs_result()
+__B_PLUS_TREE_BASE_TEMPLATE__
+std::vector<Key> __B_PLUS_TREE_BASE_CLASS__::bfs_result()
 {
 	std::vector<Key> res;
 	bfs_result(get_root(), res);
 	return res;
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBase<Key, T, D>::get_mutex_count()
+__B_PLUS_TREE_BASE_TEMPLATE__
+int __B_PLUS_TREE_BASE_CLASS__::get_mutex_count()
 {
 	return mutex_count.load();
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBase<Key, T, D>::bfs_result(node_ptr node, std::vector<Key>& res)
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::bfs_result(node_ptr node, std::vector<Key>& res)
 {
 	using namespace std;
 	

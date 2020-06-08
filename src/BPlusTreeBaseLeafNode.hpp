@@ -7,12 +7,12 @@
 #include <memory>
 
 
-template<class Key, class T, class D>
-class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T, D>
+__B_PLUS_TREE_NODE_TEMPLATE__
+class BPlusTreeBaseLeafNode : public __B_PLUS_TREE_BASENODE_CLASS__
 {	
-    typedef BPlusTreeBaseNode<Key, T, D> Node;
+    typedef __B_PLUS_TREE_BASENODE_CLASS__ Node;
+    typedef __B_PLUS_TREE_BASELEAFNODE_CLASS__ LeafNode;
     typedef std::shared_ptr<Node> node_ptr;
-    typedef BPlusTreeBaseLeafNode<Key, T, D> LeafNode;
     typedef std::pair<const Key,T> record_type;
     typedef std::shared_ptr<record_type> record_type_ptr;
     typedef typename Node::child_item_type child_item_type;
@@ -62,26 +62,26 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T, D>
 };
 
 
-template<class Key, class T, class D>
-BPlusTreeBaseLeafNode<Key, T, D>::BPlusTreeBaseLeafNode()
+__B_PLUS_TREE_NODE_TEMPLATE__
+__B_PLUS_TREE_BASELEAFNODE_CLASS__::BPlusTreeBaseLeafNode()
 {
 	childs = new child_type();
 }
 
-template<class Key, class T, class D>
-BPlusTreeBaseLeafNode<Key, T, D>::BPlusTreeBaseLeafNode(child_type* ch)
+__B_PLUS_TREE_NODE_TEMPLATE__
+__B_PLUS_TREE_BASELEAFNODE_CLASS__::BPlusTreeBaseLeafNode(child_type* ch)
 {
 	set_childs(ch);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::child_type* BPlusTreeBaseLeafNode<Key, T, D>::get_childs()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_type* __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_childs()
 {
 	return childs;
 }
 
-template<class Key, class T, class D>
-BPlusTreeBaseLeafNode<Key, T, D>::~BPlusTreeBaseLeafNode()
+__B_PLUS_TREE_NODE_TEMPLATE__
+__B_PLUS_TREE_BASELEAFNODE_CLASS__::~BPlusTreeBaseLeafNode()
 {
 	if(childs){
 		for(int i=0;i<childs_size();i++){
@@ -93,28 +93,28 @@ BPlusTreeBaseLeafNode<Key, T, D>::~BPlusTreeBaseLeafNode()
 	set_next_leaf(nullptr);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::release_node(child_item_type_ptr node)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::release_node(child_item_type_ptr node)
 {
     // TODO: replace with allocator methods
     // No need to delete shared ptr
     // delete node;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::set_childs(child_type* ch)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::set_childs(child_type* ch)
 {
 	childs = ch;
 }
 
-template<class Key, class T, class D>
-inline bool BPlusTreeBaseLeafNode<Key, T, D>::is_leaf()
+__B_PLUS_TREE_NODE_TEMPLATE__
+inline bool __B_PLUS_TREE_BASELEAFNODE_CLASS__::is_leaf()
 {
     return true;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T, D>::erase(int ind)
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::erase(int ind)
 {
     if(ind < 0){
         return nullptr;
@@ -124,60 +124,60 @@ typename BPlusTreeBaseLeafNode<Key, T, D>::child_item_type_ptr BPlusTreeBaseLeaf
     return deleted;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::erase(childs_type_iterator s, childs_type_iterator e)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::erase(childs_type_iterator s, childs_type_iterator e)
 {
     childs->erase(s, e);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::insert(int index, childs_type_iterator s, childs_type_iterator e)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::insert(int index, childs_type_iterator s, childs_type_iterator e)
 {
     childs->insert(childs->begin()+index, s, e);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::insert(child_item_type_ptr item)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::insert(child_item_type_ptr item)
 {
     int res = get_index(get_key(item));
     childs->insert(childs->begin()+res, item);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::insert(record_type_ptr item)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::insert(record_type_ptr item)
 {
 	child_item_type* ch = new child_item_type();
 	ch->item = item;
     insert(child_item_type_ptr(ch));
 }
 
-template<class Key, class T, class D>
-bool BPlusTreeBaseLeafNode<Key, T, D>::exists(const Key& key)
+__B_PLUS_TREE_NODE_TEMPLATE__
+bool __B_PLUS_TREE_BASELEAFNODE_CLASS__::exists(const Key& key)
 {
     int index = get_index(key);
     return index < childs_size() && get_key((*childs)[index]) == key;
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseLeafNode<Key, T, D>::get_index(child_item_type_ptr node)
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_index(child_item_type_ptr node)
 {
     return get_index(get_key(node));
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseLeafNode<Key, T, D>::size()
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASELEAFNODE_CLASS__::size()
 {
 	return childs_size();
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseLeafNode<Key, T, D>::childs_size()
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_size()
 {
 	return childs->size();
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseLeafNode<Key, T, D>::get_index(const Key& key, bool to_lower)
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_index(const Key& key, bool to_lower)
 {
     int mn=0,mx=childs_size()-1,md;
     int res = childs_size();
@@ -200,26 +200,26 @@ int BPlusTreeBaseLeafNode<Key, T, D>::get_index(const Key& key, bool to_lower)
     return res;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T, D>::get(int index)
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::get(int index)
 {
     return (*childs)[index];
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T, D>::first_child()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::first_child()
 {
     return get(0);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::child_item_type_ptr BPlusTreeBaseLeafNode<Key, T, D>::last_child()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::last_child()
 {
     return get(childs_size()-1);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::split(node_ptr node, node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::split(node_ptr node, node_ptr parent)
 {
 	Key ret;
 	childs_type_iterator c_start, c_end;
@@ -257,8 +257,8 @@ void BPlusTreeBaseLeafNode<Key, T, D>::split(node_ptr node, node_ptr parent)
 	}*/
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::shift_left(node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::shift_left(node_ptr parent)
 {
 	int current_index = parent->get_index(this);
     // Left node index
@@ -274,8 +274,8 @@ void BPlusTreeBaseLeafNode<Key, T, D>::shift_left(node_ptr parent)
     //update_positions(parent->get_node(current_index));
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::shift_right(node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::shift_right(node_ptr parent)
 {
 	int current_index = parent->get_index(this);
     // Left node index
@@ -292,8 +292,8 @@ void BPlusTreeBaseLeafNode<Key, T, D>::shift_right(node_ptr parent)
     update_positions(parent->get_node(current_index));*/
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::join_left(node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::join_left(node_ptr parent)
 {
 	int current_index = parent->get_index(this);
     // Get join node index
@@ -310,8 +310,8 @@ void BPlusTreeBaseLeafNode<Key, T, D>::join_left(node_ptr parent)
     //update_positions(parent->get_node(current_index));
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::join_right(node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::join_right(node_ptr parent)
 {
 	int current_index = parent->get_index(this);
     // Get join node index
@@ -328,50 +328,50 @@ void BPlusTreeBaseLeafNode<Key, T, D>::join_right(node_ptr parent)
     //update_positions(parent->get_node(current_index));
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::set_next_leaf(node_ptr node)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::set_next_leaf(node_ptr node)
 {
     next_leaf_node = node;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::set_prev_leaf(node_ptr node)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::set_prev_leaf(node_ptr node)
 {
     prev_leaf_node = node;
 }
 
-template<class Key, class T, class D>
-const Key BPlusTreeBaseLeafNode<Key, T, D>::get_key(child_item_type_ptr item)
+__B_PLUS_TREE_NODE_TEMPLATE__
+const Key __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_key(child_item_type_ptr item)
 {
     return item->item->first;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::node_ptr BPlusTreeBaseLeafNode<Key, T, D>::next_leaf()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::node_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::next_leaf()
 {
     return next_leaf_node;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::node_ptr BPlusTreeBaseLeafNode<Key, T, D>::prev_leaf()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::node_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::prev_leaf()
 {
     return prev_leaf_node;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::childs_type_iterator BPlusTreeBaseLeafNode<Key, T, D>::childs_iterator()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_iterator()
 {
     return childs->begin();
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseLeafNode<Key, T, D>::childs_type_iterator BPlusTreeBaseLeafNode<Key, T, D>::childs_iterator_end()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_iterator_end()
 {
     return childs->end();
 }
 /*
-template<class Key, class T, class D>
-void BPlusTreeBaseLeafNode<Key, T, D>::update_positions(node_ptr node)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::update_positions(node_ptr node)
 {
 	if(!childs){
 		return;

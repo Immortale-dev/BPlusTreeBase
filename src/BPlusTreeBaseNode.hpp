@@ -10,7 +10,7 @@
 static int active_nodes_count = 0;
 #endif
 
-template<class Key, class T, class D>
+__B_PLUS_TREE_NODE_TEMPLATE__
 class BPlusTreeBaseNode
 {	
 	public:
@@ -105,16 +105,16 @@ class BPlusTreeBaseNode
         //compare_t compare_fn;
 };
 
-template<class Key, class T, class D>
-BPlusTreeBaseNode<Key,T,D>::BPlusTreeBaseNode()
+__B_PLUS_TREE_NODE_TEMPLATE__
+__B_PLUS_TREE_BASENODE_CLASS__::BPlusTreeBaseNode()
 {
 	#ifdef DEBUG
 	active_nodes_count++;
 	#endif
 }
 
-template<class Key, class T, class D>
-BPlusTreeBaseNode<Key,T,D>::~BPlusTreeBaseNode()
+__B_PLUS_TREE_NODE_TEMPLATE__
+__B_PLUS_TREE_BASENODE_CLASS__::~BPlusTreeBaseNode()
 {
 	#ifdef DEBUG
 	active_nodes_count--;

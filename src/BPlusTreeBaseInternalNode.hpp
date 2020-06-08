@@ -6,12 +6,12 @@
 #include <functional>
 #include "BPlusTreeBaseNode.hpp"
 
-template<class Key, class T, class D>
-class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T, D>
+__B_PLUS_TREE_NODE_TEMPLATE__
+class BPlusTreeBaseInternalNode : public __B_PLUS_TREE_BASENODE_CLASS__
 {
-    typedef BPlusTreeBaseNode<Key, T, D> Node;
+    typedef __B_PLUS_TREE_BASENODE_CLASS__ Node;
+    typedef __B_PLUS_TREE_BASEINTERNALNODE_CLASS__ InternalNode;
     typedef std::shared_ptr<Node> node_ptr;
-    typedef BPlusTreeBaseInternalNode<Key, T, D> InternalNode;
     typedef std::vector<Key> keys_type;
     typedef std::vector<node_ptr> nodes_type;
     typedef typename nodes_type::iterator nodes_type_iterator;
@@ -62,34 +62,34 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T, D>
 };
 
 
-template<class Key, class T, class D>
-BPlusTreeBaseInternalNode<Key, T, D>::BPlusTreeBaseInternalNode()
+__B_PLUS_TREE_NODE_TEMPLATE__
+__B_PLUS_TREE_BASEINTERNALNODE_CLASS__::BPlusTreeBaseInternalNode()
 {
 	child_keys = new keys_type();
 	child_nodes = new nodes_type();
 }
 
-template<class Key, class T, class D>
-BPlusTreeBaseInternalNode<Key, T, D>::BPlusTreeBaseInternalNode(keys_type* keys, nodes_type* nodes)
+__B_PLUS_TREE_NODE_TEMPLATE__
+__B_PLUS_TREE_BASEINTERNALNODE_CLASS__::BPlusTreeBaseInternalNode(keys_type* keys, nodes_type* nodes)
 {
 	set_keys(keys);
 	set_nodes(nodes);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::keys_type* BPlusTreeBaseInternalNode<Key, T, D>::get_keys()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::keys_type* __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::get_keys()
 {
 	return child_keys;
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::nodes_type* BPlusTreeBaseInternalNode<Key, T, D>::get_nodes()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::nodes_type* __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::get_nodes()
 {
 	return child_nodes;
 }
 
-template<class Key, class T, class D>
-BPlusTreeBaseInternalNode<Key, T, D>::~BPlusTreeBaseInternalNode()
+__B_PLUS_TREE_NODE_TEMPLATE__
+__B_PLUS_TREE_BASEINTERNALNODE_CLASS__::~BPlusTreeBaseInternalNode()
 {
 	if(child_keys){
 		delete child_keys;
@@ -102,8 +102,8 @@ BPlusTreeBaseInternalNode<Key, T, D>::~BPlusTreeBaseInternalNode()
 	}
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::release_node(node_ptr node)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::release_node(node_ptr node)
 {
 	if(node->is_leaf()){
 		node->set_prev_leaf(nullptr);
@@ -122,67 +122,67 @@ void BPlusTreeBaseInternalNode<Key, T, D>::release_node(node_ptr node)
     // delete node;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::set_keys(keys_type* keys)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::set_keys(keys_type* keys)
 {
 	child_keys = keys;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::set_nodes(nodes_type* nodes)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::set_nodes(nodes_type* nodes)
 {
 	child_nodes = nodes;
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::add_keys(int ind, Key key)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::add_keys(int ind, Key key)
 {
     child_keys->insert(child_keys->begin()+ind, key);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::add_keys(int ind, keys_type_iterator s, keys_type_iterator e)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::add_keys(int ind, keys_type_iterator s, keys_type_iterator e)
 {
     child_keys->insert(child_keys->begin()+ind, s, e);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::remove_keys(int ind)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::remove_keys(int ind)
 {
     child_keys->erase(child_keys->begin()+ind);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::remove_keys(keys_type_iterator s, keys_type_iterator e)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::remove_keys(keys_type_iterator s, keys_type_iterator e)
 {
     child_keys->erase(s, e);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::add_nodes(int ind, node_ptr node)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::add_nodes(int ind, node_ptr node)
 {
     child_nodes->insert(child_nodes->begin()+ind, node);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::add_nodes(int ind, nodes_type_iterator s, nodes_type_iterator e){
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::add_nodes(int ind, nodes_type_iterator s, nodes_type_iterator e){
     child_nodes->insert(child_nodes->begin()+ind, s, e);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::remove_nodes(int ind)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::remove_nodes(int ind)
 {
     child_nodes->erase(child_nodes->begin()+ind);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::remove_nodes(nodes_type_iterator s, nodes_type_iterator e)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::remove_nodes(nodes_type_iterator s, nodes_type_iterator e)
 {
     child_nodes->erase(s, e);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::shift_right(node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::shift_right(node_ptr parent)
 {
     // Get index of shift node
     int index = parent->get_index(this)+1;
@@ -203,8 +203,8 @@ void BPlusTreeBaseInternalNode<Key, T, D>::shift_right(node_ptr parent)
     next->remove_nodes(0);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::shift_left(node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::shift_left(node_ptr parent)
 {
     // Get index of shift node
     int index = parent->get_index(this)-1;
@@ -225,8 +225,8 @@ void BPlusTreeBaseInternalNode<Key, T, D>::shift_left(node_ptr parent)
     prev->remove_nodes(prev->nodes_size()-1);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::join_left(node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::join_left(node_ptr parent)
 {
     // Get index of join node
     int index = parent->get_index(this)-1;
@@ -247,8 +247,8 @@ void BPlusTreeBaseInternalNode<Key, T, D>::join_left(node_ptr parent)
     parent->remove_nodes(index);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::join_right(node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::join_right(node_ptr parent)
 {
     // Get index of join node
     int index = parent->get_index(this)+1;
@@ -269,8 +269,8 @@ void BPlusTreeBaseInternalNode<Key, T, D>::join_right(node_ptr parent)
     parent->remove_nodes(index);
 }
 
-template<class Key, class T, class D>
-void BPlusTreeBaseInternalNode<Key, T, D>::split(node_ptr node, node_ptr parent)
+__B_PLUS_TREE_NODE_TEMPLATE__
+void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::split(node_ptr node, node_ptr parent)
 {
     // Get iterators to move to new node
     keys_type_iterator kstart = keys_iterator();
@@ -295,14 +295,14 @@ void BPlusTreeBaseInternalNode<Key, T, D>::split(node_ptr node, node_ptr parent)
     parent->add_nodes(index, node);
 }
 
-template<class Key, class T, class D>
-inline bool BPlusTreeBaseInternalNode<Key, T, D>::is_leaf()
+__B_PLUS_TREE_NODE_TEMPLATE__
+inline bool __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::is_leaf()
 {
     return false;
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseInternalNode<Key, T, D>::get_index(const Key& key, bool to_lower)
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::get_index(const Key& key, bool to_lower)
 {
     int mn=0,mx=keys_size()-1,md;
     int res = keys_size();
@@ -319,8 +319,8 @@ int BPlusTreeBaseInternalNode<Key, T, D>::get_index(const Key& key, bool to_lowe
     return res;
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseInternalNode<Key, T, D>::get_index(Node* node)
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::get_index(Node* node)
 {
     int sz = nodes_size();
     for(int i=0;i<sz;i++){
@@ -330,33 +330,33 @@ int BPlusTreeBaseInternalNode<Key, T, D>::get_index(Node* node)
     return sz;
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseInternalNode<Key, T, D>::size()
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::size()
 {
 	return nodes_size();
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseInternalNode<Key, T, D>::keys_size()
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::keys_size()
 {
 	return child_keys->size();
 }
 
-template<class Key, class T, class D>
-int BPlusTreeBaseInternalNode<Key, T, D>::nodes_size()
+__B_PLUS_TREE_NODE_TEMPLATE__
+int __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::nodes_size()
 {
 	return child_nodes->size();
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::node_ptr BPlusTreeBaseInternalNode<Key, T, D>::find(const Key& key)
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::node_ptr __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::find(const Key& key)
 {
     int index = get_index(key);
     return get_node(index);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T ,D>::node_ptr BPlusTreeBaseInternalNode<Key, T, D>::find_next(const Key& key)
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::node_ptr __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::find_next(const Key& key)
 {
     int index = get_index(key);
     index++;
@@ -365,8 +365,8 @@ typename BPlusTreeBaseInternalNode<Key, T ,D>::node_ptr BPlusTreeBaseInternalNod
     return get_node(index);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::node_ptr BPlusTreeBaseInternalNode<Key, T, D>::find_prev(const Key& key)
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::node_ptr __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::find_prev(const Key& key)
 {
     int index = get_index(key);
     index--;
@@ -375,44 +375,44 @@ typename BPlusTreeBaseInternalNode<Key, T, D>::node_ptr BPlusTreeBaseInternalNod
     return get_node(index);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::node_ptr BPlusTreeBaseInternalNode<Key, T, D>::first_child_node()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::node_ptr __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::first_child_node()
 {
     return get_node(0);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::node_ptr BPlusTreeBaseInternalNode<Key, T, D>::last_child_node()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::node_ptr __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::last_child_node()
 {
     return get_node(nodes_size()-1);
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::node_ptr BPlusTreeBaseInternalNode<Key, T, D>::get_node(int index)
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::node_ptr __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::get_node(int index)
 {
     return (*child_nodes)[index];
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::keys_type_iterator BPlusTreeBaseInternalNode<Key, T, D>::keys_iterator()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::keys_type_iterator __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::keys_iterator()
 {
     return child_keys->begin();
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::keys_type_iterator BPlusTreeBaseInternalNode<Key, T, D>::keys_iterator_end()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::keys_type_iterator __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::keys_iterator_end()
 {
     return child_keys->end();
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::nodes_type_iterator BPlusTreeBaseInternalNode<Key, T, D>::nodes_iterator()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::nodes_type_iterator __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::nodes_iterator()
 {
     return child_nodes->begin();
 }
 
-template<class Key, class T, class D>
-typename BPlusTreeBaseInternalNode<Key, T, D>::nodes_type_iterator BPlusTreeBaseInternalNode<Key, T, D>::nodes_iterator_end()
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::nodes_type_iterator __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::nodes_iterator_end()
 {
     return child_nodes->end();
 }

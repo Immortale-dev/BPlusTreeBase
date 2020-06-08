@@ -5,12 +5,13 @@
 #include <utility>
 #include <memory>
 #include <stdexcept>
+#include "BPlusTreeBaseUtils.hpp"
 #include "BPlusTreeBaseNode.hpp"
 
 
-template < class Key, class T, class D > class BPlusTreeBase;
+//template < class Key, class T, class D > class BPlusTreeBase;
 
-template <class Key, class T, class D>
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
 class BPlusTreeBaseIterator
 {
 	public:
@@ -21,7 +22,7 @@ class BPlusTreeBaseIterator
 		typedef typename Node::child_item_type_ptr child_item_type_ptr;
 		typedef std::weak_ptr<child_item_type> child_item_type_wptr;
 		typedef std::shared_ptr<Node> node_ptr;
-		typedef BPlusTreeBaseIterator<Key, T, D> self_type;
+		typedef __B_PLUS_TREE_BASEITERATOR_CLASS__ self_type;
 		typedef entry_item value_type;
 		typedef entry_item& reference;
 		typedef std::shared_ptr<entry_item> pointer;
@@ -56,8 +57,8 @@ class BPlusTreeBaseIterator
 };
 
 
-template <class Key, class T, class D>
-BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(const self_type& iter)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+__B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(const self_type& iter)
 {
 	this->item = iter.item;
 	this->base = iter.base;
@@ -69,8 +70,8 @@ BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(const self_type& iter)
 	}
 }
 
-template <class Key, class T, class D>
-typename BPlusTreeBaseIterator<Key, T, D>::self_type& BPlusTreeBaseIterator<Key, T, D>::operator=(const self_type& iter)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERATOR_CLASS__::operator=(const self_type& iter)
 {
 	child_item_type_ptr it = item.lock();
 	if(it){
@@ -89,15 +90,15 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type& BPlusTreeBaseIterator<Key,
 	return *this;
 }
 
-template <class Key, class T, class D>
-BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(self_type&& iter)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+__B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(self_type&& iter)
 {
 	this->item = std::move(iter.item);
 	this->base = std::move(iter.base);
 }
 
-template <class Key, class T, class D>
-typename BPlusTreeBaseIterator<Key, T, D>::self_type& BPlusTreeBaseIterator<Key, T, D>::operator=(self_type&& iter)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERATOR_CLASS__::operator=(self_type&& iter)
 {
 	child_item_type_ptr it = item.lock();
 	if(it){
@@ -110,15 +111,15 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type& BPlusTreeBaseIterator<Key,
 	return *this;
 }
 
-template <class Key, class T, class D>
-BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+__B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator()
 {
 	this->base = nullptr;
 	//this->item = nullptr;
 }
 
-template <class Key, class T, class D>
-BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(child_item_type_wptr item, instance_type* base)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+__B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(child_item_type_wptr item, instance_type* base)
 {
 	// Item already should be reserved
 	this->item = item;
@@ -131,8 +132,8 @@ BPlusTreeBaseIterator<Key, T, D>::BPlusTreeBaseIterator(child_item_type_wptr ite
 	}
 }
 
-template <class Key, class T, class D>
-Key BPlusTreeBaseIterator<Key, T, D>::get_key()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+Key __B_PLUS_TREE_BASEITERATOR_CLASS__::get_key()
 {
 	child_item_type_ptr it = item.lock();
 	if(!it || !it->item)
@@ -140,8 +141,8 @@ Key BPlusTreeBaseIterator<Key, T, D>::get_key()
 	return it->item->first;
 }
 
-template <class Key, class T, class D>
-BPlusTreeBaseIterator<Key, T, D>::~BPlusTreeBaseIterator()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+__B_PLUS_TREE_BASEITERATOR_CLASS__::~BPlusTreeBaseIterator()
 {
 	child_item_type_ptr it = item.lock();
 	if(it){
@@ -149,8 +150,8 @@ BPlusTreeBaseIterator<Key, T, D>::~BPlusTreeBaseIterator()
 	}
 }
 
-template <class Key, class T, class D>
-T BPlusTreeBaseIterator<Key, T, D>::get_value()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+T __B_PLUS_TREE_BASEITERATOR_CLASS__::get_value()
 {
 	child_item_type_ptr it = item.lock();
 	if(!it || !it->item)
@@ -158,14 +159,14 @@ T BPlusTreeBaseIterator<Key, T, D>::get_value()
 	return it->item->second;
 }
 
-template <class Key, class T, class D>
-bool BPlusTreeBaseIterator<Key, T, D>::expired()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+bool __B_PLUS_TREE_BASEITERATOR_CLASS__::expired()
 {
 	return (bool)(item.lock());
 }
 
-template <class Key, class T, class D>
-typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, T, D>::operator++()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATOR_CLASS__::operator++()
 {	
 	child_item_type_ptr it = item.lock();
 	child_item_type_ptr oit = it;
@@ -247,8 +248,8 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 	return *this;
 }
 
-template <class Key, class T, class D>
-typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, T, D>::operator++(int)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATOR_CLASS__::operator++(int)
 {
 	child_item_type_ptr it = item.lock();
 	child_item_type_ptr oit = it;
@@ -330,8 +331,8 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 	return n;
 }
 
-template <class Key, class T, class D>
-typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, T, D>::operator--()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATOR_CLASS__::operator--()
 {
 	child_item_type_ptr it = item.lock();
 	child_item_type_ptr oit = it;
@@ -410,8 +411,8 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 	return *this;
 }
 
-template <class Key, class T, class D>
-typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, T, D>::operator--(int)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATOR_CLASS__::operator--(int)
 {
 	child_item_type_ptr it = item.lock();
 	child_item_type_ptr oit = it;
@@ -493,22 +494,22 @@ typename BPlusTreeBaseIterator<Key, T, D>::self_type BPlusTreeBaseIterator<Key, 
 	return n;
 }
 
-template <class Key, class T, class D>
-typename BPlusTreeBaseIterator<Key, T, D>::reference BPlusTreeBaseIterator<Key, T, D>::operator*()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::reference __B_PLUS_TREE_BASEITERATOR_CLASS__::operator*()
 {
 	child_item_type_ptr it = item.lock();
 	return *(it->item);
 }
 
-template <class Key, class T, class D>
-typename BPlusTreeBaseIterator<Key, T, D>::pointer BPlusTreeBaseIterator<Key, T, D>::operator->()
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::pointer __B_PLUS_TREE_BASEITERATOR_CLASS__::operator->()
 {
 	child_item_type_ptr it = item.lock();
 	return it->item;
 }
 
-template <class Key, class T, class D>
-bool BPlusTreeBaseIterator<Key, T, D>::operator==(const self_type &r)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+bool __B_PLUS_TREE_BASEITERATOR_CLASS__::operator==(const self_type &r)
 {
 	child_item_type_ptr it = item.lock();
 	child_item_type_ptr rit = r.item.lock();
@@ -521,8 +522,8 @@ bool BPlusTreeBaseIterator<Key, T, D>::operator==(const self_type &r)
 	return (it->node.get() == rit->node.get() && it->pos == rit->pos);
 }
 
-template <class Key, class T, class D>
-bool BPlusTreeBaseIterator<Key, T, D>::operator!=(const self_type &r)
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+bool __B_PLUS_TREE_BASEITERATOR_CLASS__::operator!=(const self_type &r)
 {
 	child_item_type_ptr it = item.lock();
 	child_item_type_ptr rit = r.item.lock();
