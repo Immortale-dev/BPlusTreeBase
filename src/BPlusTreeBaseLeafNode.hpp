@@ -34,7 +34,7 @@ class BPlusTreeBaseLeafNode : public BPlusTreeBaseNode<Key, T, D>
         void erase(childs_type_iterator s, childs_type_iterator e);
         inline bool is_leaf();
         bool exists(const Key& key);
-        int get_index(const Key& key);
+        int get_index(const Key& key, bool to_lower = false);
         int get_index(child_item_type_ptr node);
         int size();
         int childs_size();
@@ -177,19 +177,24 @@ int BPlusTreeBaseLeafNode<Key, T, D>::childs_size()
 }
 
 template<class Key, class T, class D>
-int BPlusTreeBaseLeafNode<Key, T, D>::get_index(const Key& key)
+int BPlusTreeBaseLeafNode<Key, T, D>::get_index(const Key& key, bool to_lower)
 {
     int mn=0,mx=childs_size()-1,md;
     int res = childs_size();
     while(mn<=mx){
         md = (mn+mx)/2;
         const Key& k = get_key((*childs)[md]);
-        if(k < key){
+        if( (to_lower && k <= key) || (!to_lower && k < key) ){
             mn = md+1;
+            if(to_lower){
+				res = md;
+			}
         }
         else{
             mx = md-1;
-            res = md;
+            if(!to_lower){
+				res = md;
+			}
         }
     }
     return res;

@@ -22,6 +22,14 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 			auto prv = base.begin();
 			EXPECT(--prv).toBe(itno2);
 		});
+		IT("lower_bound should be equal to end()", {
+			auto lb = base.lower_bound(10);
+			EXPECT(lb).toBe(itno2);
+		});
+		IT("upper_bound should be equal to end()", {
+			auto up = base.upper_bound(10);
+			EXPECT(up).toBe(itno2);
+		});
 	});
 	
 	DESCRIBE("Add 4 items", {
@@ -37,6 +45,44 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 				auto b = base.begin();
 				++b; ++b; ++b;
 				EXPECT(b).toBe(--base.end());
+			});
+		});
+		
+		DESCRIBE("Check lower/upper bounds", {
+			IT("lower_bould(5) should not be equal to upper_bound(5)", {
+				EXPECT(base.lower_bound(5)).NOT().toBe(base.upper_bound(5));
+			});
+			
+			IT("lower_bound(5) key should be equal to `5`", {
+				EXPECT(base.lower_bound(5)->first).toBe(5);
+			});
+			
+			IT("upper_bound(5) key should be equal to `15`", {
+				EXPECT(base.upper_bound(5)->first).toBe(15);
+			});
+			
+			IT("lower_bound(10) key should be equal to 5", {
+				EXPECT(base.lower_bound(10)->first).toBe(5);
+			});
+			
+			IT("upper_bound(10) key should be equal to 15", {
+				EXPECT(base.upper_bound(10)->first).toBe(15);
+			});
+			
+			IT("lower_bound(20) key to be equal 16", {
+				EXPECT(base.lower_bound(20)->first).toBe(16);
+			});
+			
+			IT("upper_bound(20) should be equal to end()", {
+				EXPECT(base.upper_bound(20)).toBe(base.end());
+			});
+			
+			IT("lower_bound(0) key to be equal 1", {
+				EXPECT(base.lower_bound(0)->first).toBe(1);
+			});
+			
+			IT("upper_bound(0) key to be equal 1", {
+				EXPECT(base.upper_bound(0)->first).toBe(1);
 			});
 		});
 		

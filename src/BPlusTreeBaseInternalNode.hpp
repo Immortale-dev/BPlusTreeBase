@@ -43,7 +43,7 @@ class BPlusTreeBaseInternalNode : public BPlusTreeBaseNode<Key, T, D>
         int size();
         int keys_size();
         int nodes_size();
-        int get_index(const Key& key);
+        int get_index(const Key& key, bool to_lower = false);
         int get_index(Node* node);
         node_ptr first_child_node();
         node_ptr last_child_node();
@@ -116,7 +116,6 @@ void BPlusTreeBaseInternalNode<Key, T, D>::release_node(node_ptr node)
 		for(int i=0;i<childs_size;i++){
 			(*childs)[i]->node = nullptr;
 		}
-		//node->update_positions(nullptr);
 	}
     // TODO: replace with allocator methods
     // No need to delete smart ptr
@@ -303,7 +302,7 @@ inline bool BPlusTreeBaseInternalNode<Key, T, D>::is_leaf()
 }
 
 template<class Key, class T, class D>
-int BPlusTreeBaseInternalNode<Key, T, D>::get_index(const Key& key)
+int BPlusTreeBaseInternalNode<Key, T, D>::get_index(const Key& key, bool to_lower)
 {
     int mn=0,mx=keys_size()-1,md;
     int res = keys_size();

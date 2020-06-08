@@ -37,13 +37,15 @@ class BPlusTreeBase
 		BPlusTreeBase(int factor);
 		//BPlusTreeBase(int factor, compare_t fn);
 		virtual ~BPlusTreeBase();
-		iterator find(Key key);
 		void erase(Key key);
 		void erase(iterator it);
 		void clear();
 		void insert(value_type item, bool overwrite = false);
+		iterator find(Key key);
 		iterator begin();
 		iterator end();
+		iterator lower_bound(Key key);
+		iterator upper_bound(Key key);
 		long long int size();
 		T operator[](Key key);
 		
@@ -303,10 +305,55 @@ typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::begin()
 	
 	node_ptr node = min_node();
 	
-	//processSearchNodeStart(node, PROCESS_TYPE::READ);
 	iterator it(node->first_child(),this);
 	processSearchNodeEnd(node, PROCESS_TYPE::READ);
 	
+	return it;
+}
+
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::lower_bound(Key k)
+{
+	if(!size()){
+		return end();
+	}
+	
+	const Key key = k;
+	node_ptr node = get_stem();
+	processSearchNodeStart(node, PROCESS_TYPE::READ);
+	while(true){
+		if(!node){
+			processSearchNodeEnd(node, PROCESS_TYPE::READ);
+			return end();
+		}
+		if(node->is_leaf()){
+			int index = node->get_index(key, true);
+			if(index >= node->childs_size()){
+				index = 0;
+			}
+			iterator it = iterator(node->get(index), this);
+			processSearchNodeEnd(node, PROCESS_TYPE::READ);
+			return it;
+		}
+		node_ptr tnode = node->find(key);
+		processSearchNodeStart(tnode, PROCESS_TYPE::READ);
+		processSearchNodeEnd(node, PROCESS_TYPE::READ);
+		node = tnode;
+	}
+	return end();
+}
+
+template<class Key, class T, class D>
+typename BPlusTreeBase<Key, T, D>::iterator BPlusTreeBase<Key, T, D>::upper_bound(Key k)
+{
+	if(!size()){
+		return end();
+	}
+	
+	iterator it = lower_bound(k);
+	if(it.get_key() <= k){
+		++it;
+	}
 	return it;
 }
 
