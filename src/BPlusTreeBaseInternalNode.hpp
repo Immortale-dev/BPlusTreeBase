@@ -105,18 +105,6 @@ __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::~BPlusTreeBaseInternalNode()
 __B_PLUS_TREE_NODE_TEMPLATE__
 void __B_PLUS_TREE_BASEINTERNALNODE_CLASS__::release_node(node_ptr node)
 {
-	if(node->is_leaf()){
-		//node->set_prev_leaf(nullptr);
-		//node->set_next_leaf(nullptr);
-		auto childs = node->get_childs();
-		if(!childs){
-            return;
-		}
-		int childs_size = node->childs_size();
-		for(int i=0;i<childs_size;i++){
-			(*childs)[i]->node = nullptr;
-		}
-	}
     // TODO: replace with allocator methods
     // No need to delete smart ptr
     // delete node;

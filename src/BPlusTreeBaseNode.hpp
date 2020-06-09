@@ -27,11 +27,10 @@ class BPlusTreeBaseNode
 		typedef typename keys_type::iterator keys_type_iterator;
 		typedef std::shared_ptr<child_item_type> child_item_type_ptr;
 		typedef std::vector<child_item_type_ptr> child_type;
-		//typedef std::function<int(const Key& left, const Key& right)> compare_t;
 		
 		struct child_item_type{
 			int pos;
-			node_ptr node;
+			node_weak node;
 			record_type_ptr item;
 		};
 	
@@ -97,11 +96,6 @@ class BPlusTreeBaseNode
         virtual const Key get_key(child_item_type_ptr item) { return 0; };
         virtual node_ptr next_leaf() { return nullptr; };
         virtual node_ptr prev_leaf() { return nullptr; };
-        //virtual void update_positions(node_ptr node) {};
-        
-        //D data;
-        //std::mutex mtx;
-        //compare_t compare_fn;
 };
 
 __B_PLUS_TREE_NODE_TEMPLATE__

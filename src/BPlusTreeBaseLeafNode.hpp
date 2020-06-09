@@ -54,7 +54,6 @@ class BPlusTreeBaseLeafNode : public __B_PLUS_TREE_BASENODE_CLASS__
         virtual node_ptr prev_leaf();
         childs_type_iterator childs_iterator();
         childs_type_iterator childs_iterator_end();
-        //void update_positions(node_ptr node);
 
     protected:
         child_type* childs;
@@ -90,8 +89,6 @@ __B_PLUS_TREE_BASELEAFNODE_CLASS__::~BPlusTreeBaseLeafNode()
 		}
 		delete childs;
 	}
-	//set_prev_leaf(nullptr);
-	//set_next_leaf(nullptr);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -251,11 +248,6 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::split(node_ptr node, node_ptr parent)
 	}
     
 	parent->add_keys(index, ret);
-    /*node->update_positions(node);
-    // Custom update pos
-    for(int i=0;i<childs_size();i++){
-		(*childs)[i]->pos = i;
-	}*/
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -271,8 +263,6 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::shift_left(node_ptr parent)
     prev->erase(prev->childs_size()-1);
     // Update key between shifted nodes
     *(parent->keys_iterator()+index) = get_key(first_child());
-    // Update current node positions
-    //update_positions(parent->get_node(current_index));
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -288,9 +278,6 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::shift_right(node_ptr parent)
     next->erase(0);
     // Update key between shifted nodes
     *(parent->keys_iterator()+(index-1)) = get_key(next->first_child());
-    // Update positions
-    /*next->update_positions(next);
-    update_positions(parent->get_node(current_index));*/
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -307,8 +294,6 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::join_left(node_ptr parent)
     // Remove from parent
     parent->remove_keys(index);
     parent->remove_nodes(index);
-    // Update positions
-    //update_positions(parent->get_node(current_index));
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -325,8 +310,6 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::join_right(node_ptr parent)
     // Remove from parent
     parent->remove_keys(index-1);
     parent->remove_nodes(index);
-    // Update positions
-    //update_positions(parent->get_node(current_index));
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -370,18 +353,6 @@ typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_
 {
     return childs->end();
 }
-/*
-__B_PLUS_TREE_NODE_TEMPLATE__
-void __B_PLUS_TREE_BASELEAFNODE_CLASS__::update_positions(node_ptr node)
-{
-	if(!childs){
-		return;
-	}
-	for(int i=0;i<childs_size();i++){
-		(*childs)[i]->pos = i;
-		(*childs)[i]->node = node;
-	}
-}*/
 
 
 #endif // BPLUSTREEBASELEAFNODE_H

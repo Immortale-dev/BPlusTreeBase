@@ -9,8 +9,6 @@
 #include "BPlusTreeBaseNode.hpp"
 
 
-//template < class Key, class T, class D > class BPlusTreeBase;
-
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 class BPlusTreeBaseIterator
 {
@@ -175,8 +173,9 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 	get_base()->processIteratorMoveStart(it, 1);
 	
 	node_ptr node = nullptr;
-	if(it && it->node)
-		node = it->node;
+	if(it){
+		node = it->node.lock();
+	}
 	
 	if(!node){
 		node_ptr tmp = get_base()->min_node();
@@ -260,8 +259,9 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 	self_type n = *this;
 	
 	node_ptr node = nullptr;
-	if(it && it->node)
-		node = it->node;
+	if(it){
+		node = it->node.lock();
+	}
 	
 	if(!node){
 		node_ptr tmp = get_base()->min_node();
@@ -341,8 +341,9 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 	get_base()->processIteratorMoveStart(it, -1);
 	
 	node_ptr node = nullptr;
-	if(it && it->node)
-		node = it->node;
+	if(it){
+		node = it->node.lock();
+	}
 	
 	if(!node){
 		node_ptr tmp = get_base()->max_node();
@@ -423,8 +424,9 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 	self_type n = *this;
 	
 	node_ptr node = nullptr;
-	if(it && it->node)
-		node = it->node;
+	if(it){
+		node = it->node.lock();
+	}
 		
 	if(!node){
 		node_ptr tmp = get_base()->max_node();
@@ -520,7 +522,7 @@ bool __B_PLUS_TREE_BASEITERATOR_CLASS__::operator==(const self_type &r)
 	if(!it || !rit){
 		return false;
 	}
-	return (it->node.get() == rit->node.get() && it->pos == rit->pos);
+	return (it->node.lock().get() == rit->node.lock().get() && it->pos == rit->pos);
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
@@ -534,7 +536,7 @@ bool __B_PLUS_TREE_BASEITERATOR_CLASS__::operator!=(const self_type &r)
 	if(!it || !rit){
 		return true;
 	}
-	return it->node.get() != rit->node.get() || it->pos != rit->pos;
+	return it->node.lock().get() != rit->node.lock().get() || it->pos != rit->pos;
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__

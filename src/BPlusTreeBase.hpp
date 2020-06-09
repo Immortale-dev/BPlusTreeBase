@@ -33,6 +33,7 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		typedef std::pair<Key, T> value_type;
 		typedef typename Node::childs_type_iterator childs_type_iterator;	
 		typedef std::shared_ptr<Node> node_ptr;
+		typedef std::weak_ptr<Node> node_weak;
 		typedef typename Node::child_item_type child_item_type;
 		typedef typename Node::child_item_type_ptr childs_item_ptr;
 		typedef __B_PLUS_TREE_BASE_CLASS__ self_type;
@@ -41,7 +42,7 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		
 		BPlusTreeBase(const self_type& obj);
 		BPlusTreeBase(int factor);
-		//BPlusTreeBase(int factor, compare_t fn);
+		
 		virtual ~BPlusTreeBase();
 		void erase(Key key);
 		void erase(iterator it);
@@ -199,7 +200,6 @@ typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::find(K
 			iterator it = end();
 			if(node->exists(key)){
 				int index = node->get_index(key);
-				//processItemReserve(node->get(index), PROCESS_TYPE::READ);
 				it = iterator(node->get(index), static_cast<Interface*>(this));
 			}
 			processSearchNodeEnd(node, PROCESS_TYPE::READ);
@@ -221,8 +221,7 @@ void __B_PLUS_TREE_BASE_CLASS__::insert(value_type item, bool overwrite)
 	// Create record item
 	childs_item_ptr ch(new child_item_type());
 	ch->item = itm;
-	
-	//const Key& key = get_entry_key(itm);
+
 	node_ptr node = get_stem();
 	node_ptr ins = nullptr;
 	
@@ -231,12 +230,6 @@ void __B_PLUS_TREE_BASE_CLASS__::insert(value_type item, bool overwrite)
 	list.push_back(node);
 	
 	insert_req(node, nullptr, ch, ins, overwrite, list);
-	
-	//processSearchNodeStart(ins);
-	//childs_type_iterator child_iterator = ins->childs_iterator()+ins->get_index(key);
-	//processSearchNodeEnd(ins);
-	
-	//return find(key);
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
@@ -271,11 +264,8 @@ void __B_PLUS_TREE_BASE_CLASS__::clear_req(node_ptr node)
 	if(node->is_leaf()){
 		// Delete node if leaf
 		processDeleteNode(node);
-		//update_positions(node, true);
 		node->get_childs()->resize(0);
-		
-		//node->set_prev_leaf(nullptr);
-		//node->set_next_leaf(nullptr);
+
 		update_leaf_ref(node, nullptr, LEAF_REF::PREV);
 		update_leaf_ref(node, nullptr, LEAF_REF::NEXT);
 	}
@@ -383,12 +373,6 @@ __B_PLUS_TREE_BASE_TEMPLATE__
 typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::min_node(node_ptr node)
 {
 	if(is_leaf(node)){
-		// Reserve first item
-		//if(node->size()){
-		//	processItemReserve(node->first_child(), PROCESS_TYPE::READ);
-		//}
-		// process node after search
-		//processSearchNodeEnd(node, PROCESS_TYPE::READ);
 		return node;
 	}
 	
@@ -438,12 +422,6 @@ __B_PLUS_TREE_BASE_TEMPLATE__
 typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::max_node(node_ptr node)
 {
 	if(is_leaf(node)){
-		// Reserve last item
-		//if(node->size()){
-		//	processItemReserve(node->last_child(), PROCESS_TYPE::READ);
-		//}
-		// process node after search
-		//processSearchNodeEnd(node, PROCESS_TYPE::READ);
 		return node;
 	}
 	
@@ -488,8 +466,6 @@ __B_PLUS_TREE_BASE_TEMPLATE__
 void __B_PLUS_TREE_BASE_CLASS__::release_node(node_ptr node)
 {
 	if(node->is_leaf()){
-		//node->set_next_leaf(nullptr);
-		//node->set_prev_leaf(nullptr);
 		update_leaf_ref(node, nullptr, LEAF_REF::PREV);
 		update_leaf_ref(node, nullptr, LEAF_REF::NEXT);
 		update_positions(node, true);
@@ -526,7 +502,6 @@ typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::get_st
 __B_PLUS_TREE_BASE_TEMPLATE__
 void __B_PLUS_TREE_BASE_CLASS__::processSearchNodeStart(node_ptr node, PROCESS_TYPE type)
 {
-	//node->lock();
 	#ifdef DEBUG
 		mutex_count++;
 	#endif
@@ -539,7 +514,6 @@ void __B_PLUS_TREE_BASE_CLASS__::processSearchNodeEnd(node_ptr node, PROCESS_TYP
 	#ifdef DEBUG
 		mutex_count--;
 	#endif
-	//node->unlock();
 	return;
 }
 
@@ -641,7 +615,7 @@ void __B_PLUS_TREE_BASE_CLASS__::processItemMove(node_ptr node, bool release)
 	auto childs = node->get_childs();
 	for(int i=0;i<node->childs_size();i++){
 		(*childs)[i]->pos = i;
-		(*childs)[i]->node = update_node;
+		(*childs)[i]->node = node_weak(update_node);
 	}
 	return;
 }
@@ -951,8 +925,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 			node_ptr nextLeaf = swapped ? nodeRight : joinNode->next_leaf();
 			
 			if(nextLeaf){
-				// Update next to right node prev leaf
-				//nextLeaf->set_prev_leaf(node);
 				update_leaf_ref(nextLeaf, node, LEAF_REF::PREV);
 				
 				// Free prev leaf
@@ -963,7 +935,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 					processSearchNodeEnd(nextLeaf, PROCESS_TYPE::WRITE);
 				}
 			}
-			//node->set_next_leaf(nextLeaf);
 			update_leaf_ref(node, nextLeaf, LEAF_REF::NEXT);
 			
 			// Free node
@@ -991,8 +962,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 			node_ptr prevLeaf = swapped ? nodeLeft : joinNode->prev_leaf();
 			
 			if(prevLeaf){
-				// Update prev to left node next leaf
-				//prevLeaf->set_next_leaf(node);
 				update_leaf_ref(prevLeaf, node, LEAF_REF::NEXT);
 				
 				// Free prev leaf
@@ -1003,7 +972,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 					processSearchNodeEnd(prevLeaf, PROCESS_TYPE::WRITE);
 				}
 			}
-			//node->set_prev_leaf(prevLeaf);
 			update_leaf_ref(node, prevLeaf, LEAF_REF::PREV);
 			
 			// Free node
@@ -1012,8 +980,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 	}
 	
 	if(is_leaf(node)){
-		//joinNode->set_next_leaf(nullptr);
-		//joinNode->set_prev_leaf(nullptr);
 		update_leaf_ref(joinNode, nullptr, LEAF_REF::PREV);
 		update_leaf_ref(joinNode, nullptr, LEAF_REF::NEXT);
 		
@@ -1183,8 +1149,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 				
 				// Update dependencies of newly created node
 				node_ptr nextLeaf = node->next_leaf();
-				//nnode->set_next_leaf(nextLeaf);
-				//nnode->set_prev_leaf(node);
 				update_leaf_ref(nnode, nextLeaf, LEAF_REF::NEXT);
 				update_leaf_ref(nnode, node, LEAF_REF::PREV);
 				
@@ -1196,8 +1160,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 				// Process Node after search
 				processSearchNodeEnd(nnode, PROCESS_TYPE::WRITE);
 				
-				// Set next to newly created node prev leaf
-				//node->set_next_leaf(nnode);
 				update_leaf_ref(node, nnode, LEAF_REF::NEXT);
 				
 				// Free node
@@ -1205,8 +1167,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 				
 				// Update next leaf
 				if(nextLeaf){
-					//processSearchNodeStart(nextLeaf, PROCESS_TYPE::WRITE);
-					//nextLeaf->set_prev_leaf(nnode);
 					update_leaf_ref(nextLeaf, nnode, LEAF_REF::PREV);
 					
 					// Free link node
@@ -1221,8 +1181,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 				
 				// Update dependencies of newly created node
 				node_ptr prevLeaf = node->prev_leaf();
-				//nnode->set_prev_leaf(prevLeaf);
-				//nnode->set_next_leaf(node);
 				update_leaf_ref(nnode, prevLeaf, LEAF_REF::PREV);
 				update_leaf_ref(nnode, node, LEAF_REF::NEXT);
 				
@@ -1234,8 +1192,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 				// Process Node after search
 				processSearchNodeEnd(nnode, PROCESS_TYPE::WRITE);
 				
-				// Set prev from newly created node next leaf
-				//node->set_prev_leaf(nnode);
 				update_leaf_ref(node, nnode, LEAF_REF::PREV);
 				
 				// Free new node
@@ -1243,8 +1199,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 				
 				// Update prev node
 				if(prevLeaf){
-					//processSearchNodeStart(prevLeaf, PROCESS_TYPE::WRITE);
-					//prevLeaf->set_next_leaf(nnode);
 					update_leaf_ref(prevLeaf, nnode, LEAF_REF::NEXT);
 					
 					// Free link node
