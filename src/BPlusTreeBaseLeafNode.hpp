@@ -13,6 +13,7 @@ class BPlusTreeBaseLeafNode : public __B_PLUS_TREE_BASENODE_CLASS__
     typedef __B_PLUS_TREE_BASENODE_CLASS__ Node;
     typedef __B_PLUS_TREE_BASELEAFNODE_CLASS__ LeafNode;
     typedef std::shared_ptr<Node> node_ptr;
+    typedef std::weak_ptr<Node> node_weak;
     typedef std::pair<const Key,T> record_type;
     typedef std::shared_ptr<record_type> record_type_ptr;
     typedef typename Node::child_item_type child_item_type;
@@ -46,19 +47,19 @@ class BPlusTreeBaseLeafNode : public __B_PLUS_TREE_BASENODE_CLASS__
         void shift_right(node_ptr parent);
         void join_left(node_ptr parent);
         void join_right(node_ptr parent);
-        void set_next_leaf(node_ptr node);
-        void set_prev_leaf(node_ptr node);
         const Key get_key(child_item_type_ptr item);
-        node_ptr next_leaf();
-        node_ptr prev_leaf();
+        virtual void set_next_leaf(node_ptr node);
+        virtual void set_prev_leaf(node_ptr node);
+        virtual node_ptr next_leaf();
+        virtual node_ptr prev_leaf();
         childs_type_iterator childs_iterator();
         childs_type_iterator childs_iterator_end();
         //void update_positions(node_ptr node);
 
     protected:
         child_type* childs;
-        node_ptr next_leaf_node = nullptr;
-        node_ptr prev_leaf_node = nullptr;
+        node_weak next_leaf_node;
+        node_weak prev_leaf_node;
 };
 
 
@@ -89,8 +90,8 @@ __B_PLUS_TREE_BASELEAFNODE_CLASS__::~BPlusTreeBaseLeafNode()
 		}
 		delete childs;
 	}
-	set_prev_leaf(nullptr);
-	set_next_leaf(nullptr);
+	//set_prev_leaf(nullptr);
+	//set_next_leaf(nullptr);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -331,13 +332,13 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::join_right(node_ptr parent)
 __B_PLUS_TREE_NODE_TEMPLATE__
 void __B_PLUS_TREE_BASELEAFNODE_CLASS__::set_next_leaf(node_ptr node)
 {
-    next_leaf_node = node;
+    next_leaf_node = node_weak(node);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
 void __B_PLUS_TREE_BASELEAFNODE_CLASS__::set_prev_leaf(node_ptr node)
 {
-    prev_leaf_node = node;
+    prev_leaf_node = node_weak(node);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -349,13 +350,13 @@ const Key __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_key(child_item_type_ptr item)
 __B_PLUS_TREE_NODE_TEMPLATE__
 typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::node_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::next_leaf()
 {
-    return next_leaf_node;
+    return next_leaf_node.lock();
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
 typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::node_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::prev_leaf()
 {
-    return prev_leaf_node;
+    return prev_leaf_node.lock();
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__

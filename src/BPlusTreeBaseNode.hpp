@@ -18,6 +18,7 @@ class BPlusTreeBaseNode
 		
 		typedef BPlusTreeBaseNode Node;
 		typedef std::shared_ptr<Node> node_ptr;
+		typedef std::weak_ptr<Node> node_weak;
 		typedef std::vector<Key> keys_type;
 		typedef std::vector<node_ptr> nodes_type;
 		typedef std::pair<const Key,T> record_type;
