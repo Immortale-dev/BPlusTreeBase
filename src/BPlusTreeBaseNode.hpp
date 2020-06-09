@@ -48,8 +48,6 @@ class BPlusTreeBaseNode
         virtual void split(node_ptr node, node_ptr parent) = 0;
         virtual int get_index(const Key& key, bool to_lower = false) = 0;
         
-        virtual void lock(){ mtx.lock(); };
-        virtual void unlock(){ mtx.unlock(); };
         virtual bool is_leaf(){ return 0; };
         virtual node_ptr get_node(int index) { return nullptr; };
         virtual void release_node(node_ptr node) {};
@@ -100,8 +98,8 @@ class BPlusTreeBaseNode
         virtual node_ptr prev_leaf() { return nullptr; };
         //virtual void update_positions(node_ptr node) {};
         
-        D data;
-        std::mutex mtx;
+        //D data;
+        //std::mutex mtx;
         //compare_t compare_fn;
 };
 

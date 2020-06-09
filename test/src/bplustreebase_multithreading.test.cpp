@@ -1,6 +1,48 @@
 
+template<class Key, class T>
+class MyInternal : public BPlusTreeBaseInternalNode<Key, T> {
+	public: 
+		std::mutex my_mutex;
+};
+template<class Key, class T>
+class MyLeaf : public BPlusTreeBaseLeafNode<Key, T> {
+	public: 
+		std::mutex my_mutex;
+};
+template<class Key, class T>
+class MyIterator : public BPlusTreeBaseIterator<Key, T> {
+	using BPlusTreeBaseIterator<Key, T>::BPlusTreeBaseIterator;
+};
+template<class Key, class T>
+class MyBPT : public BPlusTreeBase<Key, T, MyInternal<Key, T>, MyLeaf<Key, T>, MyIterator<Key, T> >{
+	public:
+		typedef typename BPlusTreeBase<Key,T>::node_ptr node_ptr;
+		typedef typename BPlusTreeBase<Key,T>::PROCESS_TYPE PROCESS_TYPE;
+		MyBPT(int c) : BPlusTreeBase<Key, T, MyInternal<Key, T>, MyLeaf<Key, T>, MyIterator<Key, T> >(c){};
+		
+	protected:
+		void processSearchNodeStart(node_ptr node, PROCESS_TYPE type){ 
+			if(node->is_leaf()){
+				auto rnode = std::static_pointer_cast<MyLeaf<Key, T> >(node);
+				rnode->my_mutex.lock();
+			} else {
+				auto rnode = std::static_pointer_cast<MyInternal<Key, T> >(node);
+				rnode->my_mutex.lock();
+			}
+		};
+		void processSearchNodeEnd(node_ptr node, PROCESS_TYPE type){ 
+			if(node->is_leaf()){
+				auto rnode = std::static_pointer_cast<MyLeaf<Key, T> >(node);
+				rnode->my_mutex.unlock();
+			} else {
+				auto rnode = std::static_pointer_cast<MyInternal<Key, T> >(node);
+				rnode->my_mutex.unlock();
+			}
+		};
+};
+
 DESCRIBE("Multithreading insert", {
-	BPlusTreeBase<int,int> tree(10);
+	MyBPT<int,int> tree(10);
 	int tc = 100;
 	int cnt = 10000;
     
@@ -68,11 +110,11 @@ DESCRIBE("Multithreading insert", {
 // Test speed improvements
 
 template<typename Key, typename T>
-class bpt_test : public BPlusTreeBase<Key,T> {
-	typedef typename BPlusTreeBase<Key,T>::node_ptr node_ptr;
-	typedef typename BPlusTreeBase<Key,T>::PROCESS_TYPE PROCESS_TYPE;
+class bpt_test : public MyBPT<Key,T> {
+	typedef typename MyBPT<Key,T>::node_ptr node_ptr;
+	typedef typename MyBPT<Key,T>::PROCESS_TYPE PROCESS_TYPE;
 	public:
-		bpt_test(int factor) : BPlusTreeBase<Key,T>(factor)
+		bpt_test(int factor) : MyBPT<Key,T>(factor)
 		{
 			
 		}
@@ -83,7 +125,7 @@ class bpt_test : public BPlusTreeBase<Key,T> {
 		}
 		void processSearchNodeStart(node_ptr node, PROCESS_TYPE pt)
 		{
-			BPlusTreeBase<Key,T>::processSearchNodeStart(node, pt);
+			MyBPT<Key,T>::processSearchNodeStart(node, pt);
 			this_thread::sleep_for(chrono::milliseconds(1));
 		}
 };

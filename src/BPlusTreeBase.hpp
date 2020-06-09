@@ -13,14 +13,18 @@
 #include "BPlusTreeBaseLeafNode.hpp"
 #include "BPlusTreeBaseIterator.hpp"
 
-
 __B_PLUS_TREE_BASE_TEMPLATE__
-class BPlusTreeBase
+class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 {
 	public:
 		friend ITERATOR;
+		
+		typedef BPlusTreeBase__Interface<Key, T> Interface;
+		
+		typedef typename Interface::LEAF_REF LEAF_REF;
+		typedef typename Interface::PROCESS_TYPE PROCESS_TYPE;
 
-		typedef BPlusTreeBaseNode<Key, T, D> Node;
+		typedef BPlusTreeBaseNode<Key, T> Node;
 		typedef ITERATOR iterator;
 		typedef INTERNAL InternalNode;
 		typedef LEAF LeafNode;
@@ -51,8 +55,7 @@ class BPlusTreeBase
 		long long int size();
 		T operator[](Key key);
 		
-		enum class PROCESS_TYPE{ READ, WRITE };
-		enum class LEAF_REF{ PREV, NEXT };
+		
 	
 	// DEBUG METHODS
 	#ifdef DEBUG
@@ -197,7 +200,7 @@ typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::find(K
 			if(node->exists(key)){
 				int index = node->get_index(key);
 				//processItemReserve(node->get(index), PROCESS_TYPE::READ);
-				it = iterator(node->get(index), this);
+				it = iterator(node->get(index), static_cast<Interface*>(this));
 			}
 			processSearchNodeEnd(node, PROCESS_TYPE::READ);
 			return it;
@@ -307,7 +310,7 @@ typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::begin(
 	
 	node_ptr node = min_node();
 	
-	iterator it(node->first_child(),this);
+	iterator it(node->first_child(),static_cast<Interface*>(this));
 	processSearchNodeEnd(node, PROCESS_TYPE::READ);
 	
 	return it;
@@ -333,7 +336,7 @@ typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::lower_
 			if(index >= node->childs_size()){
 				index = 0;
 			}
-			iterator it = iterator(node->get(index), this);
+			iterator it = iterator(node->get(index), static_cast<Interface*>(this));
 			processSearchNodeEnd(node, PROCESS_TYPE::READ);
 			return it;
 		}
@@ -362,7 +365,7 @@ typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::upper_
 __B_PLUS_TREE_BASE_TEMPLATE__
 typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::end()
 {
-	return iterator(last, this);
+	return iterator(last, static_cast<Interface*>(this));
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
@@ -523,7 +526,7 @@ typename __B_PLUS_TREE_BASE_CLASS__::node_ptr __B_PLUS_TREE_BASE_CLASS__::get_st
 __B_PLUS_TREE_BASE_TEMPLATE__
 void __B_PLUS_TREE_BASE_CLASS__::processSearchNodeStart(node_ptr node, PROCESS_TYPE type)
 {
-	node->lock();
+	//node->lock();
 	#ifdef DEBUG
 		mutex_count++;
 	#endif
@@ -536,7 +539,7 @@ void __B_PLUS_TREE_BASE_CLASS__::processSearchNodeEnd(node_ptr node, PROCESS_TYP
 	#ifdef DEBUG
 		mutex_count--;
 	#endif
-	node->unlock();
+	//node->unlock();
 	return;
 }
 
