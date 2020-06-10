@@ -28,9 +28,9 @@ class BPlusTreeBaseIterator
 		typedef int difference_type;
 		typedef typename Node::childs_type_iterator childs_type_iterator;
 		
-		self_type operator++();
+		self_type& operator++();
 		self_type operator++(int);
-		self_type operator--();
+		self_type& operator--();
 		self_type operator--(int);
 		reference operator*();
 		pointer operator->();
@@ -165,7 +165,7 @@ bool __B_PLUS_TREE_BASEITERATOR_CLASS__::expired()
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
-typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATOR_CLASS__::operator++()
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERATOR_CLASS__::operator++()
 {	
 	child_item_type_ptr it = item.lock();
 	child_item_type_ptr oit = it;
@@ -259,7 +259,7 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
-typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATOR_CLASS__::operator--()
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERATOR_CLASS__::operator--()
 {
 	child_item_type_ptr it = item.lock();
 	child_item_type_ptr oit = it;
