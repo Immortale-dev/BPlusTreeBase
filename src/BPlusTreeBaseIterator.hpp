@@ -251,83 +251,9 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATOR_CLASS__::operator++(int)
 {
-	child_item_type_ptr it = item.lock();
-	child_item_type_ptr oit = it;
-	// Process Move Start
-	get_base()->processIteratorMoveStart(it, 1);
-	
 	self_type n = *this;
 	
-	node_ptr node = nullptr;
-	if(it){
-		node = it->node.lock();
-	}
-	
-	if(!node){
-		node_ptr tmp = get_base()->min_node();
-		
-		if(!tmp->size()){
-			it = nullptr;
-			item = it;
-		}
-		else{
-			// Item here is already reserved through the min_node method
-			item = tmp->first_child();
-			it = item.lock();
-			
-			get_base()->processLeafReserve(tmp, instance_type::PROCESS_TYPE::READ);
-			
-			get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
-		}
-		
-		// Process search end
-		get_base()->processSearchNodeEnd(tmp, instance_type::PROCESS_TYPE::READ);
-		
-		// Process Move End
-		get_base()->processIteratorMoveEnd(it, 1);
-		
-		return n;
-	}
-	if(node->childs_size() == it->pos+1){
-		
-		node_ptr onode = node;
-		
-		node = node->next_leaf();
-		
-		it = nullptr;
-		item = it;
-		
-		if(node){
-			item = node->first_child();
-			it = item.lock();
-			
-			// Reserve Item
-			get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
-		}
-		
-		// Release current item
-		get_base()->processItemRelease(oit, instance_type::PROCESS_TYPE::READ);
-		if(!node){
-			get_base()->processLeafRelease(onode, instance_type::PROCESS_TYPE::READ);
-		}
-		
-		// Process Move End
-		get_base()->processIteratorMoveEnd(it, 1);
-		
-		return n;
-	}
-	
-	item = node->get(it->pos+1);
-	it = item.lock();
-	
-	// Reserve Item
-	get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
-	
-	// Release current item
-	get_base()->processItemRelease(oit, instance_type::PROCESS_TYPE::READ);
-	
-	// Process Move End
-	get_base()->processIteratorMoveEnd(it, 1);
+	++*this;
 	
 	return n;
 }
@@ -416,83 +342,9 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATOR_CLASS__::operator--(int)
 {
-	child_item_type_ptr it = item.lock();
-	child_item_type_ptr oit = it;
-	// Process Move Start
-	get_base()->processIteratorMoveStart(it, -1);
-	
 	self_type n = *this;
 	
-	node_ptr node = nullptr;
-	if(it){
-		node = it->node.lock();
-	}
-		
-	if(!node){
-		node_ptr tmp = get_base()->max_node();
-		
-		if(!tmp->size()){
-			it = nullptr;
-			item = it;
-		}
-		else{
-			// Item reserved through the max_node method
-			item = tmp->last_child();
-			it = item.lock();
-			
-			get_base()->processLeafReserve(tmp, instance_type::PROCESS_TYPE::READ);
-			
-			get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
-		}
-		
-		// Process search end
-		get_base()->processSearchNodeEnd(tmp, instance_type::PROCESS_TYPE::READ);
-		
-		// Process Move Start
-		get_base()->processIteratorMoveEnd(it, -1);
-		
-		return n;
-	}
-	if(it->pos == 0){
-		
-		node_ptr onode = node;
-		
-		node = node->prev_leaf();
-		
-		it = nullptr;
-		item = it;
-		
-		if(node){
-			item = node->last_child();
-			it = item.lock();
-			
-			// Reserve Item
-			get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
-		}
-		
-		// Release current item
-		get_base()->processItemRelease(oit, instance_type::PROCESS_TYPE::READ);
-		if(!node){
-			get_base()->processLeafRelease(onode, instance_type::PROCESS_TYPE::READ);
-		}
-		
-		// Process Move Start
-		get_base()->processIteratorMoveEnd(it, -1);
-		
-		return n;
-	}
-	
-	item = node->get(it->pos-1);
-	it = item.lock();
-	
-	// Reserve Item
-	get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
-	
-	// Release current item
-	get_base()->processItemRelease(oit, instance_type::PROCESS_TYPE::READ);
-	
-	// Process Move Start
-	get_base()->processIteratorMoveEnd(it, -1);
+	--*this;
 	
 	return n;
 }
