@@ -31,6 +31,7 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		typedef std::pair<const Key, T> EntryItem;
 		typedef std::shared_ptr<EntryItem> EntryItem_ptr;
 		typedef std::pair<Key, T> value_type;
+		typedef std::pair<iterator, bool> insert_return_type;
 		typedef typename Node::childs_type_iterator childs_type_iterator;	
 		typedef std::shared_ptr<Node> node_ptr;
 		typedef std::weak_ptr<Node> node_weak;
@@ -54,8 +55,7 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		iterator lower_bound(Key key);
 		iterator upper_bound(Key key);
 		long long int size();
-		T operator[](Key key);
-		
+		T& operator[](Key key);
 		
 	
 	// DEBUG METHODS
@@ -180,9 +180,14 @@ long long int __B_PLUS_TREE_BASE_CLASS__::size()
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
-T __B_PLUS_TREE_BASE_CLASS__::operator[](Key key)
+T& __B_PLUS_TREE_BASE_CLASS__::operator[](Key key)
 {
-	return find(key)->second;
+	iterator it = lower_bound(key);
+	if(it == end() || it.get_key() != key){
+		insert(value_type(key,{}));
+		it = find(key);
+	}
+	return it->second;
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__

@@ -261,6 +261,31 @@ DESCRIBE("[BPlusTreeBase.hpp] Given empty tree", {
 		});
 	});
 	
+	DESCRIBE("Insert and get items with operator[]", {
+		
+		BEFORE_ALL({
+			base.erase(33);
+		});
+		
+		IT("Should insert item with key `33`", {
+			base[33] = "cool one";
+			EXPECT(base.find(33)->second).toBe("cool one");
+		});
+		
+		IT("Should change item with key `33` to new value", {
+			base[33] = "another";
+			EXPECT(base.find(33)->second).toBe("another");
+		});
+		
+		IT("should get the value of key `33`", {
+			EXPECT(base[33]).toBe("another");
+		});	
+		
+		AFTER_ALL({
+			base.erase(33);
+		});
+	});
+	
 	DESCRIBE("Insert 6 items", {
 		BEFORE_ALL({
 			base.insert(make_pair(1,"1"));
