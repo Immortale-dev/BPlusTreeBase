@@ -15,6 +15,8 @@
 
 using namespace std;
 
+#include "bplustreebaseleafnode.test.cpp"
+#include "bplustreebaseinternalnode.test.cpp"
 #include "bplustreebase.test.cpp"
 #include "bplustreebase_multithreading.test.cpp"
 
