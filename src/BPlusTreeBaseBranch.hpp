@@ -1,6 +1,12 @@
 #ifndef BPLUSTREEBASEBRANCH_H
 #define BPLUSTREEBASEBRANCH_H
 
+#include <functional>
+
+#ifdef DEBUG
+static int branch_nodes_count = 0;
+#endif
+
 template<class K, class T>
 class BPlusTreeRB{
 	public:
@@ -11,7 +17,12 @@ class BPlusTreeRB{
 			Node *left;
 			Node *right; 
 			bool color;
-		}
+			
+			#ifdef DEBUG
+			Node(){branch_nodes_count++;};
+			~Node(){branch_nodes_count--;};
+			#endif
+		};
 		
 		typedef Node* NodePtr;
 	
@@ -24,13 +35,15 @@ class BPlusTreeRB{
 		NodePtr find_max(NodePtr node);
 		NodePtr find_next(NodePtr node);
 		NodePtr find_prev(NodePtr node);
-		NodePtr insert(NodePtr node) 
+		NodePtr insert(NodePtr node);
 		NodePtr insert(NodePtr node, NodePtr hint);
 		NodePtr insert(K key, T val);
 		NodePtr erase(K key); 
 		NodePtr erase(NodePtr node); 
 		NodePtr lower_bound(K key);
 		NodePtr upper_bound(K key);
+		NodePtr end();
+		void dfs(NodePtr node, std::function<void(NodePtr)>);
 		int size();
 		
 		
@@ -56,7 +69,16 @@ BPlusTreeRB<K, T>::BPlusTreeRB()
 	TNULL->right = nullptr;
 	root = TNULL;
 	
-	size = 0;
+	count = 0;
+}
+
+template<class K, class T>
+BPlusTreeRB<K, T>::~BPlusTreeRB()
+{
+	dfs(root, [](NodePtr n){
+		delete n;
+	});
+	delete TNULL;
 }
 
 template<class K, class T>
@@ -70,10 +92,7 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::find(K k)
 {
 	NodePtr node = root;
 	while(true){
-		if(node == TNULL){
-			return nullptr;
-		}
-		if(node->key == k){
+		if(node == TNULL || node->key == k){
 			return node;
 		}
 		if(node->key < k){
@@ -82,7 +101,7 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::find(K k)
 			node = node->left;
 		}
 	}
-	return nullptr;
+	return TNULL;
 }
 
 template<class K, class T>
@@ -114,6 +133,9 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::find_next(NodePtr x)
 		x = y;
 		y = y->parent;
 	}
+	if(!y){
+		y = TNULL;
+	}
 	return y;
 }
 
@@ -127,6 +149,9 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::find_prev(NodePtr x)
 	while (y != nullptr && x == y->left) {
 		x = y;
 		y = y->parent;
+	}
+	if(!y){
+		y = TNULL;
 	}
 	return y;
 }
@@ -215,7 +240,7 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::erase(K key) {
 			node = node->left;
 		}
 	}
-	return nullptr;
+	return TNULL;
 }
 
 template<class K, class T>
@@ -261,26 +286,29 @@ template<class K, class T>
 typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::lower_bound(K key)
 {
 	NodePtr node = root;
-	NodePtr ret = nullptr;
+	NodePtr ret = TNULL;
 	while(true){
 		if(node == TNULL){
 			return ret;
 		}
-		if(node->key <= key){
+		ret = node;
+		if(node->key == key){
+			return ret;
+		}
+		if(node->key < key){
 			node = node->right;
-			ret = node;
 		} else {
 			node = node->left;
 		}
 	}
-	return nullptr;
+	return TNULL;
 }
 
 template<class K, class T>
 typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::upper_bound(K key)
 {
 	NodePtr node = lower_bound(key);
-	if(!node || node->key > key){
+	if(node == TNULL || node->key > key){
 		return node;
 	}
 	return find_next(node);
@@ -291,6 +319,13 @@ int BPlusTreeRB<K, T>::size()
 {
 	return count;
 }
+
+template<class K, class T>
+typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::end()
+{
+	return TNULL;
+}
+
 
 
 
@@ -421,6 +456,17 @@ void BPlusTreeRB<K, T>::rbTransplant(NodePtr u, NodePtr v){
 		u->parent->right = v;
 	}
 	v->parent = u->parent;
+}
+
+template<class K, class T>
+void BPlusTreeRB<K, T>::dfs(NodePtr node, std::function<void(NodePtr)> fn)
+{
+	if(node == TNULL){
+		return;
+	}
+	dfs(node->left, fn);
+	dfs(node->right, fn);
+	fn(node);
 }
 
 // fix the red-black tree
