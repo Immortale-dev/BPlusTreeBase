@@ -12,6 +12,7 @@
 #include "BPlusTreeBaseInternalNode.hpp"
 #include "BPlusTreeBaseLeafNode.hpp"
 #include "BPlusTreeBaseIterator.hpp"
+#include "BPlusTreeBaseBranch.hpp"
 
 __B_PLUS_TREE_BASE_TEMPLATE__
 class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
@@ -28,11 +29,12 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		typedef ITERATOR iterator;
 		typedef INTERNAL InternalNode;
 		typedef LEAF LeafNode;
-		typedef std::pair<const Key, T> EntryItem;
+		typedef std::pair<const Key&, T> EntryItem;
 		typedef std::shared_ptr<EntryItem> EntryItem_ptr;
 		typedef std::pair<Key, T> value_type;
 		typedef std::pair<iterator, bool> insert_return_type;
 		typedef typename Node::childs_type_iterator childs_type_iterator;	
+		typedef typename Node::child_type child_type;	
 		typedef std::shared_ptr<Node> node_ptr;
 		typedef std::weak_ptr<Node> node_weak;
 		typedef typename Node::child_item_type child_item_type;
@@ -83,13 +85,14 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		node_ptr get_stem();
 		bool is_root(node_ptr node);
 		bool is_stem(node_ptr node);
-		bool insert_req(node_ptr node, node_ptr parent, childs_item_ptr item, node_ptr& ins, bool overwrite, node_list& list);
+		bool insert_req(node_ptr node, node_ptr parent, childs_type_iterator item, node_ptr& ins, bool overwrite, node_list& list);
 		bool erase_req(node_ptr node, node_ptr parent, const Key &key, node_list& list);
 		void clear_req(node_ptr node);
 		bool is_leaf(node_ptr node);
 		void set_root(node_ptr node);
 		void release_node(node_ptr node);
-		void update_positions(node_ptr node, bool release = false);
+		void update_positions(node_ptr node);
+		void update_item_node(node_ptr node, childs_item_ptr item);
 		void update_leaf_ref(node_ptr node, node_ptr ref_node, LEAF_REF ref);
 		void init();
 		virtual void processSearchNodeStart(node_ptr node, PROCESS_TYPE type);
@@ -98,11 +101,11 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		virtual void processDeleteNode(node_ptr node);
 		virtual void processIteratorNodeReserved(node_ptr node);
 		virtual void processIteratorNodeReleased(node_ptr node);
-		virtual void processIteratorMoveStart(childs_item_ptr item, int step);
-		virtual void processIteratorMoveEnd(childs_item_ptr item, int step);
+		virtual void processIteratorMoveStart(childs_type_iterator item, int step);
+		virtual void processIteratorMoveEnd(childs_type_iterator item, int step);
 		virtual void processItemReserve(childs_item_ptr item, PROCESS_TYPE type);
 		virtual void processItemRelease(childs_item_ptr item, PROCESS_TYPE type);
-		virtual void processItemMove(node_ptr node, bool release);
+		virtual void processItemMove(node_ptr node, childs_item_ptr item);
 		virtual void processLeafReserve(node_ptr node, PROCESS_TYPE type);
 		virtual void processLeafRelease(node_ptr node, PROCESS_TYPE type);
 		virtual void processLeafInsertItem(node_ptr node, childs_item_ptr item);
@@ -113,11 +116,11 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		virtual void processLeafFree(node_ptr node);
 		virtual void processLeafRef(node_ptr node, node_ptr ref_node, LEAF_REF ref);
 		
-		void release_entry_item(childs_item_ptr item);
-		EntryItem_ptr create_entry_item(Key key, T val);
+		void release_entry_item(childs_type_iterator item);
+		childs_type_iterator create_entry_item(Key key, T val);
 		
 		node_ptr root;
-		childs_item_ptr last;
+		childs_type_iterator last;
 		node_ptr stem;
 		std::atomic<long long int> v_count;
 		const int factor;
@@ -204,8 +207,7 @@ typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::find(K
 		if(node->is_leaf()){
 			iterator it = end();
 			if(node->exists(key)){
-				int index = node->get_index(key);
-				it = iterator(node->get(index), static_cast<Interface*>(this));
+				it = iterator(node->get_iterator(key), static_cast<Interface*>(this));
 			}
 			processSearchNodeEnd(node, PROCESS_TYPE::READ);
 			return it;
@@ -221,11 +223,7 @@ typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::find(K
 __B_PLUS_TREE_BASE_TEMPLATE__
 void __B_PLUS_TREE_BASE_CLASS__::insert(value_type item, bool overwrite)
 {
-	EntryItem_ptr itm = create_entry_item(item.first, item.second);
-	
-	// Create record item
-	childs_item_ptr ch(new child_item_type());
-	ch->item = itm;
+	childs_type_iterator itm = create_entry_item(item.first, item.second);
 
 	node_ptr node = get_stem();
 	node_ptr ins = nullptr;
@@ -234,7 +232,7 @@ void __B_PLUS_TREE_BASE_CLASS__::insert(value_type item, bool overwrite)
 	node_list list;
 	list.push_back(node);
 	
-	insert_req(node, nullptr, ch, ins, overwrite, list);
+	insert_req(node, nullptr, itm, ins, overwrite, list);
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
@@ -269,8 +267,8 @@ void __B_PLUS_TREE_BASE_CLASS__::clear_req(node_ptr node)
 	if(node->is_leaf()){
 		// Delete node if leaf
 		processDeleteNode(node);
-		node->get_childs()->resize(0);
-
+		node->get_childs()->clear();
+		
 		update_leaf_ref(node, nullptr, LEAF_REF::PREV);
 		update_leaf_ref(node, nullptr, LEAF_REF::NEXT);
 	}
@@ -327,11 +325,7 @@ typename __B_PLUS_TREE_BASE_CLASS__::iterator __B_PLUS_TREE_BASE_CLASS__::lower_
 			return end();
 		}
 		if(node->is_leaf()){
-			int index = node->get_index(key, true);
-			if(index >= node->childs_size()){
-				index = 0;
-			}
-			iterator it = iterator(node->get(index), static_cast<Interface*>(this));
+			iterator it = iterator(node->get_childs()->lower_bound(key), static_cast<Interface*>(this));
 			processSearchNodeEnd(node, PROCESS_TYPE::READ);
 			return it;
 		}
@@ -473,7 +467,6 @@ void __B_PLUS_TREE_BASE_CLASS__::release_node(node_ptr node)
 	if(node->is_leaf()){
 		update_leaf_ref(node, nullptr, LEAF_REF::PREV);
 		update_leaf_ref(node, nullptr, LEAF_REF::NEXT);
-		update_positions(node, true);
 	}
 	// TODO: replace with allocator functions
 	// No need to delete smart ptr
@@ -481,9 +474,19 @@ void __B_PLUS_TREE_BASE_CLASS__::release_node(node_ptr node)
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
-void __B_PLUS_TREE_BASE_CLASS__::update_positions(node_ptr node, bool release)
+void __B_PLUS_TREE_BASE_CLASS__::update_positions(node_ptr node)
 {
-	processItemMove(node, release);
+	childs_type_iterator it = node->childs_iterator();
+	while(it != node->childs_iterator_end()){
+		update_item_node(node, it->data);
+		it = node->get_childs()->find_next(it);
+	}
+}
+
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::update_item_node(node_ptr node, childs_item_ptr item)
+{
+	processItemMove(node, item);
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
@@ -608,21 +611,9 @@ void __B_PLUS_TREE_BASE_CLASS__::processLeafRef(node_ptr node, node_ptr ref_node
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
-void __B_PLUS_TREE_BASE_CLASS__::processItemMove(node_ptr node, bool release)
+void __B_PLUS_TREE_BASE_CLASS__::processItemMove(node_ptr node, childs_item_ptr item)
 {
-	if(!node->get_childs()){
-		return;
-	}
-	node_ptr update_node = node;
-	if(release){
-		update_node = nullptr;
-	}
-	auto childs = node->get_childs();
-	for(int i=0;i<node->childs_size();i++){
-		(*childs)[i]->pos = i;
-		(*childs)[i]->node = node_weak(update_node);
-	}
-	return;
+	item->node = node_weak(node);
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
@@ -656,7 +647,7 @@ void __B_PLUS_TREE_BASE_CLASS__::processIteratorNodeReleased(node_ptr node)
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
-void __B_PLUS_TREE_BASE_CLASS__::processIteratorMoveStart(childs_item_ptr item, int step)
+void __B_PLUS_TREE_BASE_CLASS__::processIteratorMoveStart(childs_type_iterator item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count++;
@@ -665,7 +656,7 @@ void __B_PLUS_TREE_BASE_CLASS__::processIteratorMoveStart(childs_item_ptr item, 
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
-void __B_PLUS_TREE_BASE_CLASS__::processIteratorMoveEnd(childs_item_ptr item, int step)
+void __B_PLUS_TREE_BASE_CLASS__::processIteratorMoveEnd(childs_type_iterator item, int step)
 {
 	#ifdef DEBUG
 		iterator_move_count--;
@@ -674,18 +665,20 @@ void __B_PLUS_TREE_BASE_CLASS__::processIteratorMoveEnd(childs_item_ptr item, in
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
-typename __B_PLUS_TREE_BASE_CLASS__::EntryItem_ptr __B_PLUS_TREE_BASE_CLASS__::create_entry_item(Key key, T val)
+typename __B_PLUS_TREE_BASE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASE_CLASS__::create_entry_item(Key key, T val)
 {
-	// TODO: replace with allocator functions
-	return EntryItem_ptr(new EntryItem(key, val));
+	childs_type_iterator it = new typename child_type::Node();
+	it->key = key;
+	EntryItem_ptr itp = EntryItem_ptr(new EntryItem(it->key, val));
+	it->data = childs_item_ptr(new child_item_type());
+	it->data->item = itp;
+	return it;
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
-void __B_PLUS_TREE_BASE_CLASS__::release_entry_item(childs_item_ptr item)
+void __B_PLUS_TREE_BASE_CLASS__::release_entry_item(childs_type_iterator item)
 {
-	// TODO replace with allocator functions
-	// No need to delete shared ptr
-	// delete item;
+	delete item;
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
@@ -715,21 +708,19 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 			return false;
 		}
 		
+		childs_type_iterator itm = node->get_iterator(key);
 		
-		int index = node->get_index(key);
-		childs_item_ptr itm = node->get(index);
+		// Get item itself
+		childs_item_ptr ritm = itm->data;
 		
 		// Leaf change operations
-		processLeafDeleteItem(node, itm);
+		processLeafDeleteItem(node, ritm);
 		
 		// Release item
-		release_entry_item(node->erase(index));
+		release_entry_item(node->erase(itm));
 		
 		// process release item
-		processItemRelease(itm, PROCESS_TYPE::WRITE);
-		
-		// Update position
-		update_positions(node);
+		processItemRelease(ritm, PROCESS_TYPE::WRITE);
 		
 		// process free leaf
 		processLeafFree(node);
@@ -762,7 +753,7 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 	}
 
 	if(node->size() >= factor || is_root(node)){
-
+		
 		if(!is_leaf(node) && node->size() == 1){
 
 			node_ptr child = node->first_child_node();
@@ -799,6 +790,7 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 		}
 		// Process node after search
 		processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
+		
 		// Parent node was not changed
 		return false;
 	}
@@ -822,9 +814,8 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 		node->shift_left(parent);
 		
 		if(is_leaf(node)){
-			// Update positions
-			update_positions(node);
-			update_positions(nodeLeft);
+			// Update item node
+			update_item_node(node, node->first_child()->data);
 			
 			// Free nodes
 			processLeafFree(node);
@@ -838,7 +829,7 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 		// Process updated node
 		processInsertNode(nodeLeft);
 		processSearchNodeEnd(nodeLeft, PROCESS_TYPE::WRITE);
-
+		
 		// Parent node changed
 		return true;
 	}
@@ -864,9 +855,8 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 		node->shift_right(parent);
 		
 		if(is_leaf(node)){
-			// Update positions
-			update_positions(node);
-			update_positions(nodeRight);
+			// Update item node
+			update_item_node(node, node->last_child()->data);
 			
 			// Free nodes
 			processLeafFree(node);
@@ -880,11 +870,11 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 		// Process updated node
 		processInsertNode(nodeRight);
 		processSearchNodeEnd(nodeRight, PROCESS_TYPE::WRITE);
-
+		
 		// Parent node changed
 		return true;
 	}
-
+	
 	node_ptr joinNode = nodeRight ? nodeRight : nodeLeft;
 	
 	bool join_r;
@@ -908,9 +898,7 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 			join_r = true;
 		}
 	}
-
 	if(join_r){
-		
 		if(is_leaf(node)){
 			// Avoid dead locks
 			node_ptr nextLeaf = swapped ? nodeRight : joinNode->next_leaf();
@@ -921,7 +909,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 		}
 		
 		node->join_right(parent);
-		
 		
 		if(is_leaf(node)){
 			// Update positions
@@ -947,7 +934,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 		}
 	}
 	else{
-		
 		if(is_leaf(node)){
 			// Avoid dead locks
 			node_ptr prevLeaf = swapped ? nodeLeft : joinNode->prev_leaf();
@@ -958,7 +944,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 		}
 		
 		node->join_left(parent);
-		
 		
 		if(is_leaf(node)){
 			// Update positions
@@ -1016,7 +1001,7 @@ bool __B_PLUS_TREE_BASE_CLASS__::erase_req(node_ptr node, node_ptr parent, const
 }
 
 __B_PLUS_TREE_BASE_TEMPLATE__
-bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, childs_item_ptr item, node_ptr& ins, bool overwrite, node_list& list)
+bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, childs_type_iterator item, node_ptr& ins, bool overwrite, node_list& list)
 {	
 	// Process Node before search
 	processSearchNodeStart(node, PROCESS_TYPE::WRITE);
@@ -1032,8 +1017,8 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 			list.pop_front();
 		}
 	}
-
-	const Key& key = get_entry_key(item);
+	
+	const Key& key = item->key;
 	if(is_leaf(node)){
 		// Remove current node from path list
 		list.pop_back();
@@ -1042,15 +1027,16 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 		
 		if(!node->exists(key)){
 			// Leaf change insert item
-			processLeafInsertItem(node, item);
+			processLeafInsertItem(node, item->data);
 			
 			v_count++;			
 			node->insert(item);
 			
-			update_positions(node);
+			// Update item node
+			update_item_node(node, item->data);
 			
 			// Free item
-			processItemRelease(item, PROCESS_TYPE::WRITE);
+			processItemRelease(item->data, PROCESS_TYPE::WRITE);
 		
 			// Free leaf item change
 			processLeafFree(node);
@@ -1058,16 +1044,17 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 			nodeChanged = true;
 		}
 		else if(overwrite){
-			int index = node->get_index(key);
-			
-			childs_item_ptr itm = node->get(index);
+			// Get item
+			childs_type_iterator it_i = node->get_iterator(key);
+			childs_item_ptr itm = it_i->data;
 			
 			// Leaf change insert item
 			processLeafInsertItem(node, itm);
 			
-			itm->item->second = item->item->second;
+			itm->item->second = item->data->item->second;
 			
-			update_positions(node);
+			// Free memory for duplicated item
+			release_entry_item(item);
 			
 			// Free Item
 			processItemRelease(itm, PROCESS_TYPE::WRITE);
@@ -1076,6 +1063,9 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 			processLeafFree(node);
 			
 			nodeChanged = true;
+		} else {
+			// Free memory for duplicated item
+			release_entry_item(item);
 		}
 	}	
 	else{
@@ -1101,11 +1091,10 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 			return false;
 		}
 	}
-
+	
 	node_ptr nnode = nullptr;
 
 	if(node->size() >= factor*2){
-		
 		// Ensure that parent node is locked
 		assert(!list.empty());
 		
@@ -1139,7 +1128,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 		if(is_leaf(node)){
 			// Update positions
 			update_positions(nnode);
-			update_positions(node);
 		}
 		
 		// Update inserted node ref if necessary
@@ -1233,7 +1221,6 @@ bool __B_PLUS_TREE_BASE_CLASS__::insert_req(node_ptr node, node_ptr parent, chil
 			// Process Node after search
 			processSearchNodeEnd(parent, PROCESS_TYPE::WRITE);
 		}
-		
 		return true;
 	}
 
@@ -1307,13 +1294,12 @@ void __B_PLUS_TREE_BASE_CLASS__::bfs_result(node_ptr node, std::vector<Key>& res
 {
 	using namespace std;
 	
-
 	if(is_leaf(node)){
 		res.push_back(node->size());
 		auto it = node->childs_iterator();
-		for(int i=0;i<node->size();i++){
-			res.push_back((*it)->item->first);
-			++it;
+		while(it != node->childs_iterator_end()){
+			res.push_back(it->data->item->first);
+			it = node->get_childs()->find_next(it);
 		}
 		return;
 	}

@@ -42,8 +42,10 @@ class BPlusTreeRB{
 		NodePtr erase(NodePtr node); 
 		NodePtr lower_bound(K key);
 		NodePtr upper_bound(K key);
+		NodePtr begin();
 		NodePtr end();
 		void dfs(NodePtr node, std::function<void(NodePtr)>);
+		void clear();
 		int size();
 		
 		
@@ -75,9 +77,7 @@ BPlusTreeRB<K, T>::BPlusTreeRB()
 template<class K, class T>
 BPlusTreeRB<K, T>::~BPlusTreeRB()
 {
-	dfs(root, [](NodePtr n){
-		delete n;
-	});
+	clear();
 	delete TNULL;
 }
 
@@ -107,6 +107,9 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::find(K k)
 template<class K, class T>
 typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::find_min(NodePtr node) 
 {
+	if(node == TNULL){
+		return TNULL;
+	}
 	while (node->left != TNULL) {
 		node = node->left;
 	}
@@ -116,6 +119,9 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::find_min(NodePtr node)
 template<class K, class T>
 typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::find_max(NodePtr node) 
 {
+	if(node == TNULL){
+		return TNULL;
+	}
 	while (node->right != TNULL) {
 		node = node->right;
 	}
@@ -167,6 +173,9 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::insert(NodePtr node, Node
 {
 	NodePtr x = hint;
 	NodePtr y = nullptr;
+	if(!x){
+		x = root;
+	}
 
 	while (x != TNULL) {
 		y = x;
@@ -266,13 +275,11 @@ typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::erase(NodePtr z) {
 			y->right = z->right;
 			y->right->parent = y;
 		}
-
 		rbTransplant(z, y);
 		y->left = z->left;
 		y->left->parent = y;
 		y->color = z->color;
 	}
-	//delete z;
 	if (y_original_color == 0){
 		fixDelete(x);
 	}
@@ -286,18 +293,22 @@ template<class K, class T>
 typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::lower_bound(K key)
 {
 	NodePtr node = root;
-	NodePtr ret = TNULL;
+	NodePtr ret = node;
 	while(true){
 		if(node == TNULL){
 			return ret;
 		}
-		ret = node;
 		if(node->key == key){
-			return ret;
+			return node;
 		}
+		
 		if(node->key < key){
+			ret = node;
 			node = node->right;
 		} else {
+			if(ret->key > node->key){
+				ret = node;
+			}
 			node = node->left;
 		}
 	}
@@ -321,16 +332,16 @@ int BPlusTreeRB<K, T>::size()
 }
 
 template<class K, class T>
+typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::begin()
+{
+	return find_min(root);
+}
+
+template<class K, class T>
 typename BPlusTreeRB<K, T>::NodePtr BPlusTreeRB<K, T>::end()
 {
 	return TNULL;
 }
-
-
-
-
-
-
 
 /* PRIVATE */
 
@@ -402,7 +413,6 @@ void BPlusTreeRB<K, T>::fixDelete(NodePtr x) {
 					rightRotate(s);
 					s = x->parent->right;
 				} 
-
 				// case 3.4
 				s->color = x->parent->color;
 				x->parent->color = 0;
@@ -419,8 +429,7 @@ void BPlusTreeRB<K, T>::fixDelete(NodePtr x) {
 				rightRotate(x->parent);
 				s = x->parent->left;
 			}
-
-			if (s->right->color == 0 && s->right->color == 0) {
+			if (s->left->color == 0 && s->right->color == 0) {
 				// case 3.2
 				s->color = 1;
 				x = x->parent;
@@ -432,7 +441,6 @@ void BPlusTreeRB<K, T>::fixDelete(NodePtr x) {
 					leftRotate(s);
 					s = x->parent->left;
 				} 
-
 				// case 3.4
 				s->color = x->parent->color;
 				x->parent->color = 0;
@@ -467,6 +475,15 @@ void BPlusTreeRB<K, T>::dfs(NodePtr node, std::function<void(NodePtr)> fn)
 	dfs(node->left, fn);
 	dfs(node->right, fn);
 	fn(node);
+}
+
+template<class K, class T>
+void BPlusTreeRB<K, T>::clear()
+{
+	dfs(root, [](NodePtr node){
+		delete node;
+	});
+	root = TNULL;
 }
 
 // fix the red-black tree

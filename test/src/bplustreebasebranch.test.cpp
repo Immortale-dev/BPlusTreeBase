@@ -8,7 +8,6 @@ DESCRIBE("BPlusTreeBaseRB", {
 		BPlusTreeRB<int, string>* tree;
 		
 		BEFORE_EACH({
-			//cout << "BEF_EACH" << endl;
 			tree = new BPlusTreeRB<int, string>();
 		});
 		
@@ -17,21 +16,17 @@ DESCRIBE("BPlusTreeBaseRB", {
 		});
 		
 		IT("Should initialize", {
-			//cout << "TEST_0" << endl;
 			EXPECT(tree->size()).toBe(0);
 		});
 		
 		DESCRIBE("Add 10 items with keys from 1 to 10", {
-			//BPlusTreeRB<int, string> tree;
 			BEFORE_ALL({
-				//cout << "BEF_ALL_1" << endl;
 				for(int i=1;i<=10;i++){
 					tree->insert(i,"test_"+std::to_string(i));
 				}
 			});
 			
 			IT("Items should be inserted", {
-				//cout << "TEST_1 - " << tree->size() << endl;
 				EXPECT(tree->size()).toBe(10);
 				for(int i=1;i<=10;i++){
 					EXPECT(tree->find(i)->data).toBe("test_"+std::to_string(i));
@@ -52,9 +47,7 @@ DESCRIBE("BPlusTreeBaseRB", {
 		});
 		
 		DESCRIBE("Add 10 items in next order: {6,1,8,2,4,5,10,9,7,3}", {
-			//BPlusTreeRB<int, string> tree;
 			BEFORE_ALL({
-				//cout << "BEF_ALL_2" << endl;
 				vector<int> v{6,1,8,2,4,5,10,9,7,3};
 				for(auto it : v){
 					tree->insert(it,"test_"+std::to_string(it));
@@ -62,7 +55,6 @@ DESCRIBE("BPlusTreeBaseRB", {
 			});
 			
 			IT("Items should be inserted", {
-				//cout << "TEST_2" << endl;
 				EXPECT(tree->size()).toBe(10);
 				for(int i=1;i<=10;i++){
 					EXPECT(tree->find(i)->data).toBe("test_"+std::to_string(i));
@@ -183,7 +175,7 @@ DESCRIBE("BPlusTreeBaseRB", {
 	DESCRIBE("After tree destruct", {
 		IT("Nodes count should be `0`", {
 			EXPECT(branch_nodes_count).toBe(0);
-			INFO_PRINT(std::to_string(branch_nodes_count));
+			INFO_PRINT("`branch_nodes_count` = " + std::to_string(branch_nodes_count));
 		});
 	});
 });

@@ -30,6 +30,7 @@ class BPlusTreeBase__Interface{
 		typedef BPlusTreeBaseNode<Key, T> Node;
 		typedef std::shared_ptr<Node> node_ptr;
 		typedef typename Node::child_item_type_ptr childs_item_ptr;
+		typedef typename Node::childs_type_iterator childs_type_iterator;
 		
 	public:
 		virtual void processSearchNodeStart(node_ptr node, PROCESS_TYPE type) = 0;
@@ -38,11 +39,11 @@ class BPlusTreeBase__Interface{
 		virtual void processDeleteNode(node_ptr node) = 0;
 		virtual void processIteratorNodeReserved(node_ptr node) = 0;
 		virtual void processIteratorNodeReleased(node_ptr node) = 0;
-		virtual void processIteratorMoveStart(childs_item_ptr item, int step) = 0;
-		virtual void processIteratorMoveEnd(childs_item_ptr item, int step) = 0;
+		virtual void processIteratorMoveStart(childs_type_iterator item, int step) = 0;
+		virtual void processIteratorMoveEnd(childs_type_iterator item, int step) = 0;
 		virtual void processItemReserve(childs_item_ptr item, PROCESS_TYPE type) = 0;
 		virtual void processItemRelease(childs_item_ptr item, PROCESS_TYPE type) = 0;
-		virtual void processItemMove(node_ptr node, bool release) = 0;
+		virtual void processItemMove(node_ptr node, childs_item_ptr item) = 0;
 		virtual void processLeafReserve(node_ptr node, PROCESS_TYPE type) = 0;
 		virtual void processLeafRelease(node_ptr node, PROCESS_TYPE type) = 0;
 		virtual void processLeafInsertItem(node_ptr node, childs_item_ptr item) = 0;

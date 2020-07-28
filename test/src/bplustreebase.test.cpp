@@ -5,6 +5,7 @@ DESCRIBE("[BPlusTreeBase.hpp]", {
 	DESCRIBE("Given empty tree", {
 		
 		srand (time(NULL));
+		
 		auto base = BPlusTreeBase<int,string>(3);
 			
 		DESCRIBE("w/o doing anything", {
@@ -45,6 +46,7 @@ DESCRIBE("[BPlusTreeBase.hpp]", {
 					auto b = base.begin();
 					++b; ++b; ++b;
 					EXPECT(b).toBe(--base.end());
+					INFO_PRINT("item_reserve_count: " + to_string(base.item_reserve_count.load()));
 				});
 			});
 			
@@ -186,6 +188,7 @@ DESCRIBE("[BPlusTreeBase.hpp]", {
 						EXPECT(base.size()).toBe(cc);
 						INFO_PRINT("Mutex: "+to_string(base.get_mutex_count()));
 						INFO_PRINT("Reserved: "+to_string(base.reserved_count));
+						INFO_PRINT("item_reserve_count: " + to_string(base.item_reserve_count.load()));
 					});
 				});
 				
@@ -200,6 +203,7 @@ DESCRIBE("[BPlusTreeBase.hpp]", {
 					IT("size of three should be expected", {
 						EXPECT(base.size()).toBe(cc);
 						INFO_PRINT("Mutex: "+to_string(base.get_mutex_count()));
+						INFO_PRINT("item_reserve_count: " + to_string(base.item_reserve_count.load()));
 					});
 					
 					DESCRIBE("Remove items in interval [600,900)", {
@@ -240,6 +244,7 @@ DESCRIBE("[BPlusTreeBase.hpp]", {
 						EXPECT(base.size()).toBe(0);
 						INFO_PRINT("Mutex: "+to_string(base.get_mutex_count()));
 						INFO_PRINT("item_reserve_count: " + to_string(base.item_reserve_count.load()));
+						INFO_PRINT("`branch_nodes_count` = " + std::to_string(branch_nodes_count));
 					});
 				});
 			});

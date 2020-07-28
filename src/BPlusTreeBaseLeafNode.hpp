@@ -18,42 +18,47 @@ class BPlusTreeBaseLeafNode : public __B_PLUS_TREE_BASENODE_CLASS__
     typedef std::shared_ptr<record_type> record_type_ptr;
     typedef typename Node::child_item_type child_item_type;
     typedef std::shared_ptr<child_item_type> child_item_type_ptr;
-    typedef std::vector<child_item_type_ptr> child_type;
-    typedef typename child_type::iterator childs_type_iterator;
+    typedef typename Node::child_type child_type;
+    typedef typename Node::childs_type_iterator childs_type_iterator;
 
     public:
         BPlusTreeBaseLeafNode();
         BPlusTreeBaseLeafNode(child_type* ch);
         ~BPlusTreeBaseLeafNode();
-        void release_node(child_item_type_ptr node);
+        void release_node(childs_type_iterator node);
         void set_childs(child_type* ch);
         child_type* get_childs();
-        void insert(child_item_type_ptr item);
-        void insert(record_type_ptr item);
-        void insert(int index, childs_type_iterator s, childs_type_iterator e);
-        child_item_type_ptr erase(int index);
-        void erase(childs_type_iterator s, childs_type_iterator e);
+        void insert(childs_type_iterator item);
+        void insert(childs_type_iterator item, childs_type_iterator hint);
+        childs_type_iterator erase(const Key& item);
+        childs_type_iterator erase(childs_type_iterator item);
         inline bool is_leaf();
+        
         bool exists(const Key& key);
-        int get_index(const Key& key, bool to_lower = false);
-        int get_index(child_item_type_ptr node);
+        childs_type_iterator get_iterator(const Key& key);
+        
         int size();
         int childs_size();
-        child_item_type_ptr get(int index);
-        child_item_type_ptr first_child();
-        child_item_type_ptr last_child();
+        
+        childs_type_iterator first_child();
+        childs_type_iterator last_child();
+        
         void split(node_ptr node, node_ptr parent);
         void shift_left(node_ptr parent);
         void shift_right(node_ptr parent);
         void join_left(node_ptr parent);
         void join_right(node_ptr parent);
+        
         const Key get_key(child_item_type_ptr item);
+        const Key get_key(childs_type_iterator item);
         virtual void set_next_leaf(node_ptr node);
         virtual void set_prev_leaf(node_ptr node);
         virtual node_ptr next_leaf();
         virtual node_ptr prev_leaf();
+        
         childs_type_iterator childs_iterator();
         childs_type_iterator childs_iterator_end();
+        childs_type_iterator move_childs_iterator(childs_type_iterator it, int count);
 
     protected:
         child_type* childs;
@@ -84,19 +89,21 @@ __B_PLUS_TREE_NODE_TEMPLATE__
 __B_PLUS_TREE_BASELEAFNODE_CLASS__::~BPlusTreeBaseLeafNode()
 {
 	if(childs){
-		for(int i=0;i<childs_size();i++){
-			release_node((*childs)[i]);
+		childs_type_iterator begin = childs->begin();
+		while(begin != childs->end()){
+			childs_type_iterator rm = begin;
+			begin = childs->find_next(begin);
+			release_node(erase(rm));
 		}
 		delete childs;
 	}
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
-void __B_PLUS_TREE_BASELEAFNODE_CLASS__::release_node(child_item_type_ptr node)
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::release_node(childs_type_iterator node)
 {
     // TODO: replace with allocator methods
-    // No need to delete shared ptr
-    // delete node;
+	delete node;
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -112,54 +119,39 @@ inline bool __B_PLUS_TREE_BASELEAFNODE_CLASS__::is_leaf()
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
-typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::erase(int ind)
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::erase(const Key& item)
 {
-    if(ind < 0){
-        return nullptr;
-	}
-	child_item_type_ptr deleted = (*childs)[ind];
-    childs->erase(childs->begin()+ind);
-    return deleted;
+	return childs->erase(item);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
-void __B_PLUS_TREE_BASELEAFNODE_CLASS__::erase(childs_type_iterator s, childs_type_iterator e)
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::erase(childs_type_iterator item)
 {
-    childs->erase(s, e);
+	return childs->erase(item);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
-void __B_PLUS_TREE_BASELEAFNODE_CLASS__::insert(int index, childs_type_iterator s, childs_type_iterator e)
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::insert(childs_type_iterator item)
 {
-    childs->insert(childs->begin()+index, s, e);
+    childs->insert(item);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
-void __B_PLUS_TREE_BASELEAFNODE_CLASS__::insert(child_item_type_ptr item)
+void __B_PLUS_TREE_BASELEAFNODE_CLASS__::insert(childs_type_iterator item, childs_type_iterator hint)
 {
-    int res = get_index(get_key(item));
-    childs->insert(childs->begin()+res, item);
-}
-
-__B_PLUS_TREE_NODE_TEMPLATE__
-void __B_PLUS_TREE_BASELEAFNODE_CLASS__::insert(record_type_ptr item)
-{
-	child_item_type* ch = new child_item_type();
-	ch->item = item;
-    insert(child_item_type_ptr(ch));
+    childs->insert(item, hint);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
 bool __B_PLUS_TREE_BASELEAFNODE_CLASS__::exists(const Key& key)
 {
-    int index = get_index(key);
-    return index < childs_size() && get_key((*childs)[index]) == key;
+	return childs->find(key) != childs->end();
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
-int __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_index(child_item_type_ptr node)
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_iterator(const Key& key)
 {
-    return get_index(get_key(node));
+	return childs->find(key);
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -175,45 +167,15 @@ int __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_size()
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
-int __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_index(const Key& key, bool to_lower)
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::first_child()
 {
-    int mn=0,mx=childs_size()-1,md;
-    int res = childs_size();
-    while(mn<=mx){
-        md = (mn+mx)/2;
-        const Key& k = get_key((*childs)[md]);
-        if( (to_lower && k <= key) || (!to_lower && k < key) ){
-            mn = md+1;
-            if(to_lower){
-				res = md;
-			}
-        }
-        else{
-            mx = md-1;
-            if(!to_lower){
-				res = md;
-			}
-        }
-    }
-    return res;
+    return childs->begin();
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
-typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::get(int index)
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::last_child()
 {
-    return (*childs)[index];
-}
-
-__B_PLUS_TREE_NODE_TEMPLATE__
-typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::first_child()
-{
-    return get(0);
-}
-
-__B_PLUS_TREE_NODE_TEMPLATE__
-typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::last_child()
-{
-    return get(childs_size()-1);
+    return childs->find_max(childs->find_root());
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
@@ -223,8 +185,9 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::split(node_ptr node, node_ptr parent)
 	childs_type_iterator c_start, c_end;
 	int index = parent->get_index(this);
 	bool nextIns = false;
+	
 	if(parent->first_child_node().get() == this){
-		c_start = childs_iterator() + childs_size()/2;
+		c_start = move_childs_iterator(childs_iterator(), childs_size()/2);
 		c_end = childs_iterator_end();
 		// Add items to parent node
 		parent->add_nodes(index+1, node);
@@ -232,13 +195,19 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::split(node_ptr node, node_ptr parent)
 	}
 	else{
 		c_start = childs_iterator();
-		c_end = childs_iterator() + childs_size()/2;
+		c_end = move_childs_iterator(childs_iterator(), childs_size()/2);
 		// Add items to parent node
 		parent->add_nodes(index, node);
 	}
 	
-	node->insert(0, c_start, c_end);
-    erase(c_start, c_end);
+	childs_type_iterator hnt = nullptr;
+    while(c_start != c_end){
+		childs_type_iterator mv = c_start;
+		c_start = childs->find_next(c_start);
+		
+		node->insert(erase(mv), hnt);
+		hnt = mv;
+	}
 	
 	if(nextIns){
 		ret = get_key(node->first_child());
@@ -259,8 +228,7 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::shift_left(node_ptr parent)
     // Get shift node
     node_ptr prev = parent->get_node(index);
     // Shift item
-    insert(prev->last_child());
-    prev->erase(prev->childs_size()-1);
+    insert(prev->erase(prev->last_child()));
     // Update key between shifted nodes
     *(parent->keys_iterator()+index) = get_key(first_child());
 }
@@ -274,8 +242,7 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::shift_right(node_ptr parent)
     // Get shift node
     node_ptr next = parent->get_node(index);
     // Shift item
-    insert(next->first_child());
-    next->erase(0);
+    insert(next->erase(next->first_child()));
     // Update key between shifted nodes
     *(parent->keys_iterator()+(index-1)) = get_key(next->first_child());
 }
@@ -289,8 +256,14 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::join_left(node_ptr parent)
     // Get join node
     node_ptr prev = parent->get_node(index);
     // Move all items from join node
-    insert(0, prev->childs_iterator(), prev->childs_iterator_end());
-    prev->erase(prev->childs_iterator(), prev->childs_iterator_end());
+	childs_type_iterator start = prev->childs_iterator(), rem, hint = nullptr;
+	while(start != prev->childs_iterator_end()){
+		rem = start;
+		start = prev->get_childs()->find_next(start);
+		// Insert with hint
+		insert(prev->erase(rem), hint);
+		hint = rem;
+	}
     // Remove from parent
     parent->remove_keys(index);
     parent->remove_nodes(index);
@@ -305,8 +278,14 @@ void __B_PLUS_TREE_BASELEAFNODE_CLASS__::join_right(node_ptr parent)
     // Get join node
     node_ptr next = parent->get_node(index);
     // Move all items from join node
-    insert(childs_size(), next->childs_iterator(), next->childs_iterator_end());
-    next->erase(next->childs_iterator(), next->childs_iterator_end());
+    childs_type_iterator start = next->childs_iterator(), rem, hint = nullptr;
+	while(start != next->childs_iterator_end()){
+		rem = start;
+		start = next->get_childs()->find_next(start);
+		// Insert with hint
+		insert(next->erase(rem), hint);
+		hint = rem;
+	}
     // Remove from parent
     parent->remove_keys(index-1);
     parent->remove_nodes(index);
@@ -331,6 +310,12 @@ const Key __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_key(child_item_type_ptr item)
 }
 
 __B_PLUS_TREE_NODE_TEMPLATE__
+const Key __B_PLUS_TREE_BASELEAFNODE_CLASS__::get_key(childs_type_iterator item)
+{
+    return item->key;
+}
+
+__B_PLUS_TREE_NODE_TEMPLATE__
 typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::node_ptr __B_PLUS_TREE_BASELEAFNODE_CLASS__::next_leaf()
 {
     return next_leaf_node.lock();
@@ -352,6 +337,21 @@ __B_PLUS_TREE_NODE_TEMPLATE__
 typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_iterator_end()
 {
     return childs->end();
+}
+
+__B_PLUS_TREE_NODE_TEMPLATE__
+typename __B_PLUS_TREE_BASELEAFNODE_CLASS__::childs_type_iterator __B_PLUS_TREE_BASELEAFNODE_CLASS__::move_childs_iterator(childs_type_iterator it, int count)
+{
+	while(count != 0){
+		if(count > 0){
+			it = childs->find_next(it);
+			count--;
+		} else {
+			it = childs->find_prev(it);
+			count++;
+		}
+	}
+	return it;
 }
 
 

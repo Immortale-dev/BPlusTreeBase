@@ -10,6 +10,7 @@
 #include <mutex>
 #include <chrono>
 #include <unordered_set>
+#include <condition_variable>
 #include "BPlusTreeBase.hpp"
 
 
@@ -20,6 +21,7 @@ using namespace std;
 #include "bplustreebase.test.cpp"
 #include "bplustreebasebranch.test.cpp"
 #include "bplustreebase_multithreading.test.cpp"
+#include "bplustreebase_performance.test.cpp"
 
 #include <iostream>
 

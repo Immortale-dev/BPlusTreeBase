@@ -13,7 +13,7 @@ __B_PLUS_TREE_ITERATOR_TEMPLATE__
 class BPlusTreeBaseIterator
 {
 	public:
-		typedef std::pair<const Key, T> entry_item;
+		typedef std::pair<const Key&, T> entry_item;
 		typedef BPlusTreeBase__Interface<Key, T> instance_type;
 		typedef BPlusTreeBaseNode<Key, T> Node;
 		typedef typename Node::child_item_type child_item_type;
@@ -42,7 +42,7 @@ class BPlusTreeBaseIterator
 		self_type& operator=(const self_type& iter);
 		BPlusTreeBaseIterator(self_type&& iter);
 		self_type& operator=(self_type&& iter);
-		BPlusTreeBaseIterator(child_item_type_wptr item, instance_type* base);
+		BPlusTreeBaseIterator(childs_type_iterator item, instance_type* base);
 		virtual ~BPlusTreeBaseIterator();
 		
 		Key get_key();
@@ -51,7 +51,8 @@ class BPlusTreeBaseIterator
 		
 	protected:
 		virtual instance_type* get_base();
-		child_item_type_wptr item;
+		virtual child_item_type_ptr get_item(childs_type_iterator it);
+		childs_type_iterator item;
 		instance_type* base;
 };
 
@@ -62,7 +63,8 @@ __B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(const self_type& iter)
 	this->item = iter.item;
 	this->base = iter.base;
 	
-	child_item_type_ptr it = item.lock();
+	
+	child_item_type_ptr it = get_item(item);
 	
 	if(it){
 		get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -72,7 +74,7 @@ __B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(const self_type& iter)
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERATOR_CLASS__::operator=(const self_type& iter)
 {
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	if(it){
 		get_base()->processItemRelease(it, instance_type::PROCESS_TYPE::READ);
 	}
@@ -80,7 +82,7 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 	this->item = iter.item;
 	this->base = iter.base;
 	
-	it = item.lock();
+	it = get_item(item);
 	
 	if(it){
 		get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -94,18 +96,22 @@ __B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(self_type&& iter)
 {
 	this->item = std::move(iter.item);
 	this->base = std::move(iter.base);
+	iter.item = nullptr;
+	iter.base = nullptr;
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERATOR_CLASS__::operator=(self_type&& iter)
 {
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	if(it){
 		get_base()->processItemRelease(it, instance_type::PROCESS_TYPE::READ);
 	}
 	
 	this->item = std::move(iter.item);
 	this->base = std::move(iter.base);
+	iter.item = nullptr;
+	iter.base = nullptr;
 	
 	return *this;
 }
@@ -114,17 +120,17 @@ __B_PLUS_TREE_ITERATOR_TEMPLATE__
 __B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator()
 {
 	this->base = nullptr;
-	//this->item = nullptr;
+	this->item = nullptr;
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
-__B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(child_item_type_wptr item, instance_type* base)
+__B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(childs_type_iterator item, instance_type* base)
 {
 	// Item already should be reserved
 	this->item = item;
 	this->base = base;
 	
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	
 	if(it){
 		get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -132,27 +138,27 @@ __B_PLUS_TREE_BASEITERATOR_CLASS__::BPlusTreeBaseIterator(child_item_type_wptr i
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
-Key __B_PLUS_TREE_BASEITERATOR_CLASS__::get_key()
-{
-	child_item_type_ptr it = item.lock();
-	if(!it || !it->item)
-		throw std::out_of_range("Could Not get key from end()");
-	return it->item->first;
-}
-
-__B_PLUS_TREE_ITERATOR_TEMPLATE__
 __B_PLUS_TREE_BASEITERATOR_CLASS__::~BPlusTreeBaseIterator()
 {
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	if(it){
 		get_base()->processItemRelease(it, instance_type::PROCESS_TYPE::READ);
 	}
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
+Key __B_PLUS_TREE_BASEITERATOR_CLASS__::get_key()
+{
+	child_item_type_ptr it = get_item(item);
+	if(!it || !it->item)
+		throw std::out_of_range("Could Not get key from end()");
+	return it->item->first;
+}
+
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
 T __B_PLUS_TREE_BASEITERATOR_CLASS__::get_value()
 {
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	if(!it || !it->item)
 		throw std::out_of_range("Could Not get value from end()");
 	return it->item->second;
@@ -161,16 +167,16 @@ T __B_PLUS_TREE_BASEITERATOR_CLASS__::get_value()
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 bool __B_PLUS_TREE_BASEITERATOR_CLASS__::expired()
 {
-	return (bool)(item.lock());
+	return (bool)(get_item(item));
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERATOR_CLASS__::operator++()
 {	
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	child_item_type_ptr oit = it;
 	// Process Move Start
-	get_base()->processIteratorMoveStart(it, 1);
+	get_base()->processIteratorMoveStart(item, 1);
 	
 	node_ptr node = nullptr;
 	if(it){
@@ -182,12 +188,12 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		
 		if(!tmp->size()){
 			it = nullptr;
-			item = it;
+			item = nullptr;
 		}
 		else{
 			// Item here is already reserved through the min_node method
 			item = tmp->first_child();
-			it = item.lock();
+			it = get_item(item);
 			
 			get_base()->processLeafReserve(tmp, instance_type::PROCESS_TYPE::READ);
 			
@@ -199,23 +205,23 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		get_base()->processSearchNodeEnd(tmp, instance_type::PROCESS_TYPE::READ);
 		
 		// Process Move End
-		get_base()->processIteratorMoveEnd(it, 1);
+		get_base()->processIteratorMoveEnd(item, 1);
 		
 		return *this;
 	}
-	if(node->childs_size() == it->pos+1){
+	if(node->get_childs()->find_next(item) == node->childs_iterator_end()){
 		
 		node_ptr onode = node;
 		
 		node = node->next_leaf();
 		
 		it = nullptr;
-		item = it;
+		item = nullptr;
 		
 		if(node){		
 			item = node->first_child();
 			
-			it = item.lock();
+			it = get_item(item);
 			
 			// Reserve Item
 			get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -228,13 +234,13 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		}
 		
 		// Process Move End
-		get_base()->processIteratorMoveEnd(it, 1);
+		get_base()->processIteratorMoveEnd(item, 1);
 		
 		return *this;
 	}
 	
-	item = node->get(it->pos+1);
-	it = item.lock();
+	item = node->get_childs()->find_next(item);
+	it = get_item(item);
 	
 	// Reserve Item
 	get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -243,7 +249,7 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 	get_base()->processItemRelease(oit, instance_type::PROCESS_TYPE::READ);
 	
 	// Process Move End
-	get_base()->processIteratorMoveEnd(it, 1);
+	get_base()->processIteratorMoveEnd(item, 1);
 	
 	return *this;
 }
@@ -261,10 +267,10 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERATOR_CLASS__::operator--()
 {
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	child_item_type_ptr oit = it;
 	// Process Move Start
-	get_base()->processIteratorMoveStart(it, -1);
+	get_base()->processIteratorMoveStart(item, -1);
 	
 	node_ptr node = nullptr;
 	if(it){
@@ -276,12 +282,12 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		
 		if(!tmp->size()){
 			it = nullptr;
-			item = it;
+			item = nullptr;
 		}
 		else{
 			// Item reserved through the max_node method
 			item = tmp->last_child();
-			it = item.lock();
+			it = get_item(item);
 			
 			get_base()->processLeafReserve(tmp, instance_type::PROCESS_TYPE::READ);
 			
@@ -292,21 +298,20 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		get_base()->processSearchNodeEnd(tmp, instance_type::PROCESS_TYPE::READ);
 		
 		// Process Move End
-		get_base()->processIteratorMoveEnd(it, -1);
+		get_base()->processIteratorMoveEnd(item, -1);
 		
 		return *this;
 	}
-	if(it->pos == 0){
-		
+	if(node->get_childs()->find_prev(item) == node->childs_iterator_end()){
 		node_ptr onode = node;
 		node = node->prev_leaf();
 		
 		it = nullptr;
-		item = it;
+		item = nullptr;
 		
 		if(node){		
 			item = node->last_child();
-			it = item.lock();
+			it = get_item(item);
 			
 			// Relerve Item
 			get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -319,13 +324,13 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		}
 		
 		// Process Move Start
-		get_base()->processIteratorMoveEnd(it, -1);
+		get_base()->processIteratorMoveEnd(item, -1);
 		
 		return *this;
 	}
 	
-	item = node->get(it->pos-1);
-	it = item.lock();
+	item = node->get_childs()->find_prev(item);
+	it = get_item(item);
 	
 	// Reserve Item
 	get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
@@ -334,7 +339,7 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 	get_base()->processItemRelease(oit, instance_type::PROCESS_TYPE::READ);
 	
 	// Process Move Start
-	get_base()->processIteratorMoveEnd(it, -1);
+	get_base()->processIteratorMoveEnd(item, -1);
 	
 	return *this;
 }
@@ -352,49 +357,54 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type __B_PLUS_TREE_BASEITERATO
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::reference __B_PLUS_TREE_BASEITERATOR_CLASS__::operator*()
 {
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	return *(it->item);
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::pointer __B_PLUS_TREE_BASEITERATOR_CLASS__::operator->()
 {
-	child_item_type_ptr it = item.lock();
+	child_item_type_ptr it = get_item(item);
 	return it->item;
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 bool __B_PLUS_TREE_BASEITERATOR_CLASS__::operator==(const self_type &r)
 {
-	child_item_type_ptr it = item.lock();
-	child_item_type_ptr rit = r.item.lock();
-	if(!it && !rit){
+	if(!item && !r.item){
 		return base == r.base;
 	}
-	if(!it || !rit){
+	if(!item || !r.item){
 		return false;
 	}
-	return (it->node.lock().get() == rit->node.lock().get() && it->pos == rit->pos);
+	return item == r.item;
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 bool __B_PLUS_TREE_BASEITERATOR_CLASS__::operator!=(const self_type &r)
 {
-	child_item_type_ptr it = item.lock();
-	child_item_type_ptr rit = r.item.lock();
-	if(!it && !rit){
+	if(!item && !r.item){
 		return base != r.base;
 	}
-	if(!it || !rit){
+	if(!item || !r.item){
 		return true;
 	}
-	return it->node.lock().get() != rit->node.lock().get() || it->pos != rit->pos;
+	return item != r.item;
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 typename __B_PLUS_TREE_BASEITERATOR_CLASS__::instance_type* __B_PLUS_TREE_BASEITERATOR_CLASS__::get_base()
 {
 	return base;
+}
+
+__B_PLUS_TREE_ITERATOR_TEMPLATE__
+typename __B_PLUS_TREE_BASEITERATOR_CLASS__::child_item_type_ptr __B_PLUS_TREE_BASEITERATOR_CLASS__::get_item(childs_type_iterator it)
+{
+	if(!it){
+		return nullptr;
+	}
+	return it->data;
 }
 
 #endif // BPLUSTREEBASEITERATOR_H

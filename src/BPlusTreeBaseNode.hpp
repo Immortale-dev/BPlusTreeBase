@@ -3,8 +3,8 @@
 
 #include <vector>
 #include <utility>
-#include <mutex>
 #include <memory>
+#include "BPlusTreeBaseBranch.hpp"
 
 #ifdef DEBUG
 static int active_nodes_count = 0;
@@ -21,21 +21,20 @@ class BPlusTreeBaseNode
 		typedef std::weak_ptr<Node> node_weak;
 		typedef std::vector<Key> keys_type;
 		typedef std::vector<node_ptr> nodes_type;
-		typedef std::pair<const Key,T> record_type;
+		typedef std::pair<const Key&,T> record_type;
 		typedef std::shared_ptr<record_type> record_type_ptr;
 		typedef typename nodes_type::iterator nodes_type_iterator;
 		typedef typename keys_type::iterator keys_type_iterator;
 		typedef std::shared_ptr<child_item_type> child_item_type_ptr;
-		typedef std::vector<child_item_type_ptr> child_type;
+		typedef BPlusTreeRB<Key,child_item_type_ptr> child_type;
 		
 		struct child_item_type{
-			int pos;
 			node_weak node;
 			record_type_ptr item;
 		};
 	
 	public:
-		typedef typename child_type::iterator childs_type_iterator;
+		typedef typename child_type::Node* childs_type_iterator;
     
         BPlusTreeBaseNode();
         virtual ~BPlusTreeBaseNode();
@@ -46,8 +45,8 @@ class BPlusTreeBaseNode
         virtual void join_left(node_ptr parent) = 0;
         virtual void join_right(node_ptr parent) = 0;
         virtual void split(node_ptr node, node_ptr parent) = 0;
-        virtual int get_index(const Key& key, bool to_lower = false) = 0;
         
+        virtual int get_index(const Key& key, bool to_lower = false){ return 0; };
         virtual bool is_leaf(){ return 0; };
         virtual node_ptr get_node(int index) { return nullptr; };
         virtual void release_node(node_ptr node) {};
@@ -70,6 +69,7 @@ class BPlusTreeBaseNode
         virtual child_type* get_childs() { return nullptr; };
         virtual int get_index(Node* node) { return 0; };
         virtual int get_index(child_item_type_ptr node) { return 0; };
+        virtual childs_type_iterator get_iterator(const Key& key){ return{}; };
         virtual node_ptr first_child_node() { return nullptr; };
         virtual node_ptr last_child_node() { return nullptr; };
         virtual node_ptr find(const Key& key) { return nullptr; };
@@ -81,19 +81,19 @@ class BPlusTreeBaseNode
         virtual keys_type_iterator keys_iterator_end() { return {}; };
         virtual nodes_type_iterator nodes_iterator_end() { return {}; };
         virtual childs_type_iterator childs_iterator_end() { return {}; };
-        virtual void release_node(child_item_type_ptr node) {};
-        virtual void insert(child_item_type_ptr item) {};
-        virtual void insert(record_type_ptr item) {};
-        virtual void insert(int index, childs_type_iterator s, childs_type_iterator e) {};
-        virtual child_item_type_ptr erase(int index) { return nullptr; };
-        virtual void erase(childs_type_iterator s, childs_type_iterator e) {};
+        virtual childs_type_iterator move_childs_iterator(childs_type_iterator it, int ind) { return {}; };
+        virtual void release_node(childs_type_iterator node) {};
+        virtual void insert(childs_type_iterator item) {};
+        virtual void insert(childs_type_iterator item, childs_type_iterator hint) {};
+        virtual childs_type_iterator erase(const Key& item){ return nullptr; };
+        virtual childs_type_iterator erase(childs_type_iterator item){ return nullptr; };
         virtual bool exists(const Key& key) { return 0; };
-        virtual child_item_type_ptr get(int index) { return nullptr; };
-        virtual child_item_type_ptr first_child() { return nullptr; };
-        virtual child_item_type_ptr last_child() { return nullptr; };
+        virtual childs_type_iterator first_child() { return nullptr; };
+        virtual childs_type_iterator last_child() { return nullptr; };
         virtual void set_next_leaf(node_ptr node) {};
         virtual void set_prev_leaf(node_ptr node) {};
         virtual const Key get_key(child_item_type_ptr item) { return 0; };
+        virtual const Key get_key(childs_type_iterator item) { return 0; };
         virtual node_ptr next_leaf() { return nullptr; };
         virtual node_ptr prev_leaf() { return nullptr; };
 };
