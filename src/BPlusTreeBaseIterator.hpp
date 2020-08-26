@@ -167,7 +167,7 @@ T __B_PLUS_TREE_BASEITERATOR_CLASS__::get_value()
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
 bool __B_PLUS_TREE_BASEITERATOR_CLASS__::expired()
 {
-	return (bool)(get_item(item));
+	return !((bool)(get_item(item)));
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
@@ -196,7 +196,7 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 			it = get_item(item);
 			
 			get_base()->processLeafReserve(tmp, instance_type::PROCESS_TYPE::READ);
-			
+
 			get_base()->processItemReserve(it, instance_type::PROCESS_TYPE::READ);
 		}
 		

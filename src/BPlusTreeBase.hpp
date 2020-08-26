@@ -114,6 +114,7 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		virtual void processLeafJoin(node_ptr node, node_ptr join_node, node_ptr link_node);
 		virtual void processLeafShift(node_ptr node, node_ptr shift_node);
 		virtual void processLeafFree(node_ptr node);
+		virtual void processLeafLock(node_ptr node);
 		virtual void processLeafRef(node_ptr node, node_ptr ref_node, LEAF_REF ref);
 		
 		void release_entry_item(childs_type_iterator item);
@@ -265,6 +266,10 @@ void __B_PLUS_TREE_BASE_CLASS__::clear_req(node_ptr node)
 {
 	processSearchNodeStart(node, PROCESS_TYPE::WRITE);
 	if(node->is_leaf()){
+		
+		// Lock leaf
+		processLeafLock(node);
+		
 		// Delete node if leaf
 		processDeleteNode(node);
 		node->get_childs()->clear();
@@ -287,6 +292,9 @@ void __B_PLUS_TREE_BASE_CLASS__::clear_req(node_ptr node)
 	if(is_stem(node)){
 		node_ptr n = create_leaf_node();
 		set_root(n);
+	}
+	if(node->is_leaf()){
+		processLeafFree(node);
 	}
 	processSearchNodeEnd(node, PROCESS_TYPE::WRITE);
 	if(!is_stem(node)){
@@ -595,6 +603,12 @@ void __B_PLUS_TREE_BASE_CLASS__::processLeafShift(node_ptr node, node_ptr shift_
 
 __B_PLUS_TREE_BASE_TEMPLATE__
 void __B_PLUS_TREE_BASE_CLASS__::processLeafFree(node_ptr node)
+{
+	return;
+}
+
+__B_PLUS_TREE_BASE_TEMPLATE__
+void __B_PLUS_TREE_BASE_CLASS__::processLeafLock(node_ptr node)
 {
 	return;
 }
