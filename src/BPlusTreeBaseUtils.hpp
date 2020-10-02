@@ -46,6 +46,8 @@ class BPlusTreeBase__Interface{
 		virtual void processItemMove(node_ptr node, childs_item_ptr item) = 0;
 		virtual void processLeafReserve(node_ptr node, PROCESS_TYPE type) = 0;
 		virtual void processLeafRelease(node_ptr node, PROCESS_TYPE type) = 0;
+		virtual void processOffsetLeafReserve(node_ptr node, int offset) = 0;
+		virtual void processOffsetLeafRelease(node_ptr node, int offset) = 0;
 		virtual void processLeafInsertItem(node_ptr node, childs_item_ptr item) = 0;
 		virtual void processLeafDeleteItem(node_ptr node, childs_item_ptr item) = 0;
 		virtual void processLeafSplit(node_ptr node, node_ptr new_node, node_ptr link_node) = 0;

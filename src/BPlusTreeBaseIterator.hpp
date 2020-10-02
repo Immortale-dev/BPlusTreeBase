@@ -213,6 +213,9 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		
 		node_ptr onode = node;
 		
+		// Reserve next leaf
+		get_base()->processOffsetLeafReserve(node, 1);
+		
 		node = node->next_leaf();
 		
 		it = nullptr;
@@ -232,6 +235,9 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		if(!node){
 			get_base()->processLeafRelease(onode, instance_type::PROCESS_TYPE::READ);
 		}
+		
+		// Release previous node
+		get_base()->processOffsetLeafRelease(onode, 0);
 		
 		// Process Move End
 		get_base()->processIteratorMoveEnd(item, 1);
@@ -303,7 +309,12 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		return *this;
 	}
 	if(node->get_childs()->find_prev(item) == node->childs_iterator_end()){
+		
 		node_ptr onode = node;
+		
+		// Reserve next leaf
+		get_base()->processOffsetLeafReserve(node, -1);
+		
 		node = node->prev_leaf();
 		
 		it = nullptr;
@@ -323,7 +334,10 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 			get_base()->processLeafRelease(onode, instance_type::PROCESS_TYPE::READ);
 		}
 		
-		// Process Move Start
+		// Release previous node
+		get_base()->processOffsetLeafRelease(onode, 0);
+		
+		// Process Move End
 		get_base()->processIteratorMoveEnd(item, -1);
 		
 		return *this;
