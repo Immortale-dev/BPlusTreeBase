@@ -1,4 +1,4 @@
-
+SCENARIO_START
 
 
 DESCRIBE("[BPlusTreeBaseLeafNode]", {
@@ -132,3 +132,5 @@ DESCRIBE("[BPlusTreeBaseLeafNode]", {
 		//});
 	//});
 });
+
+SCENARIO_END

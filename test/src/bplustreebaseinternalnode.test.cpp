@@ -1,4 +1,4 @@
-
+SCENARIO_START
 
 DESCRIBE("[BPlusTreeBaseInternalNode]", {
 	
@@ -28,3 +28,5 @@ DESCRIBE("[BPlusTreeBaseInternalNode]", {
 		});
 	});
 });
+
+SCENARIO_END

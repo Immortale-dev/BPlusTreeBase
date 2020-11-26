@@ -232,9 +232,6 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		
 		// Process release item
 		get_base()->processItemRelease(oit, instance_type::PROCESS_TYPE::READ);
-		if(!node){
-			get_base()->processLeafRelease(onode, instance_type::PROCESS_TYPE::READ);
-		}
 		
 		// Release previous node
 		get_base()->processOffsetLeafRelease(onode, 0);
@@ -330,9 +327,6 @@ typename __B_PLUS_TREE_BASEITERATOR_CLASS__::self_type& __B_PLUS_TREE_BASEITERAT
 		
 		// Release current item
 		get_base()->processItemRelease(oit, instance_type::PROCESS_TYPE::READ);
-		if(!node){
-			get_base()->processLeafRelease(onode, instance_type::PROCESS_TYPE::READ);
-		}
 		
 		// Release previous node
 		get_base()->processOffsetLeafRelease(onode, 0);

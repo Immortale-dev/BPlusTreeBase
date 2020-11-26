@@ -1,4 +1,4 @@
-
+SCENARIO_START
 
 DESCRIBE("[BPlusTreeBase.hpp]", {
 
@@ -746,3 +746,5 @@ DESCRIBE("[BPlusTreeBase.hpp]", {
 		});
 	});
 });
+
+SCENARIO_END

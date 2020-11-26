@@ -17,6 +17,8 @@ void do_something(){ int a=10; a++; --a; }
 #include <unordered_map>
 #include <fstream>
 
+SCENARIO_START
+
 DESCRIBE("[performance_tests]", {
 
 	DESCRIBE("INSERT 100000 items", {
@@ -51,3 +53,6 @@ DESCRIBE("[performance_tests]", {
 		});
 	});
 });
+
+
+SCENARIO_END

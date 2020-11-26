@@ -41,6 +41,8 @@ class MyBPT : public BPlusTreeBase<Key, T, MyInternal<Key, T>, MyLeaf<Key, T>, M
 		};
 };
 
+SCENARIO_START
+
 DESCRIBE("Multithreading insert", {
 	MyBPT<int,int> tree(10);
 	int tc = 100;
@@ -107,6 +109,8 @@ DESCRIBE("Multithreading insert", {
 	});
 });
 
+SCENARIO_END
+
 // Test speed improvements
 
 template<typename Key, typename T>
@@ -129,6 +133,8 @@ class bpt_test : public MyBPT<Key,T> {
 			this_thread::sleep_for(chrono::milliseconds(1));
 		}
 };
+
+SCENARIO_START
 
 DESCRIBE("Speed Improvement test", {
 	
@@ -304,3 +310,5 @@ DESCRIBE("Speed Improvement test", {
 		});
 	});
 });
+
+SCENARIO_END

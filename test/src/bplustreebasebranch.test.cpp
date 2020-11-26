@@ -1,5 +1,7 @@
 #include "BPlusTreeBaseBranch.hpp"
 
+SCENARIO_START
+
 DESCRIBE("BPlusTreeBaseRB", {
 	
 	
@@ -179,3 +181,5 @@ DESCRIBE("BPlusTreeBaseRB", {
 		});
 	});
 });
+
+SCENARIO_END
