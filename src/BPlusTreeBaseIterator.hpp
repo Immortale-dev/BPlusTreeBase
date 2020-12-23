@@ -45,8 +45,8 @@ class BPlusTreeBaseIterator
 		BPlusTreeBaseIterator(childs_type_iterator item, instance_type* base);
 		virtual ~BPlusTreeBaseIterator();
 		
-		Key get_key();
-		T get_value();
+		const Key& get_key();
+		T& get_value();
 		bool expired();
 		
 	protected:
@@ -147,7 +147,7 @@ __B_PLUS_TREE_BASEITERATOR_CLASS__::~BPlusTreeBaseIterator()
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
-Key __B_PLUS_TREE_BASEITERATOR_CLASS__::get_key()
+const Key& __B_PLUS_TREE_BASEITERATOR_CLASS__::get_key()
 {
 	child_item_type_ptr it = get_item(item);
 	if(!it || !it->item)
@@ -156,7 +156,7 @@ Key __B_PLUS_TREE_BASEITERATOR_CLASS__::get_key()
 }
 
 __B_PLUS_TREE_ITERATOR_TEMPLATE__
-T __B_PLUS_TREE_BASEITERATOR_CLASS__::get_value()
+T& __B_PLUS_TREE_BASEITERATOR_CLASS__::get_value()
 {
 	child_item_type_ptr it = get_item(item);
 	if(!it || !it->item)

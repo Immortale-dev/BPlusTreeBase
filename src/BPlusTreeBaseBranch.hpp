@@ -1,6 +1,8 @@
 #ifndef BPLUSTREEBASEBRANCH_H
 #define BPLUSTREEBASEBRANCH_H
 
+// Thanks https://algorithmtutor.com/ for inspiration
+
 #include <functional>
 
 #ifdef DEBUG
