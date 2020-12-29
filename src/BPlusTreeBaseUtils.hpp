@@ -37,8 +37,6 @@ class BPlusTreeBase__Interface{
 		virtual void processSearchNodeEnd(node_ptr node, PROCESS_TYPE type) = 0;
 		virtual void processInsertNode(node_ptr node) = 0;
 		virtual void processDeleteNode(node_ptr node) = 0;
-		virtual void processIteratorNodeReserved(node_ptr node) = 0;
-		virtual void processIteratorNodeReleased(node_ptr node) = 0;
 		virtual void processIteratorMoveStart(childs_type_iterator item, int step) = 0;
 		virtual void processIteratorMoveEnd(childs_type_iterator item, int step) = 0;
 		virtual void processItemReserve(childs_item_ptr item, PROCESS_TYPE type) = 0;

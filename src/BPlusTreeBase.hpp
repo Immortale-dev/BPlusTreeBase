@@ -99,8 +99,6 @@ class BPlusTreeBase : public BPlusTreeBase__Interface<Key, T>
 		virtual void processSearchNodeEnd(node_ptr node, PROCESS_TYPE type);
 		virtual void processInsertNode(node_ptr node);
 		virtual void processDeleteNode(node_ptr node);
-		virtual void processIteratorNodeReserved(node_ptr node);
-		virtual void processIteratorNodeReleased(node_ptr node);
 		virtual void processIteratorMoveStart(childs_type_iterator item, int step);
 		virtual void processIteratorMoveEnd(childs_type_iterator item, int step);
 		virtual void processItemReserve(childs_item_ptr item, PROCESS_TYPE type);
@@ -653,24 +651,6 @@ void __B_PLUS_TREE_BASE_CLASS__::processInsertNode(node_ptr node)
 __B_PLUS_TREE_BASE_TEMPLATE__
 void __B_PLUS_TREE_BASE_CLASS__::processDeleteNode(node_ptr node)
 {
-	return;
-}
-
-__B_PLUS_TREE_BASE_TEMPLATE__
-void __B_PLUS_TREE_BASE_CLASS__::processIteratorNodeReserved(node_ptr node)
-{
-	#ifdef DEBUG
-		reserved_count++;
-	#endif
-	return;
-}
-
-__B_PLUS_TREE_BASE_TEMPLATE__
-void __B_PLUS_TREE_BASE_CLASS__::processIteratorNodeReleased(node_ptr node)
-{
-	#ifdef DEBUG
-		reserved_count--;
-	#endif
 	return;
 }
 
